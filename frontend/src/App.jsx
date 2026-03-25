@@ -8,10 +8,13 @@ import Live from "./pages/Live";
 import { AuthProvider, AuthContext } from "./context/AuthContext";
 import { useContext } from "react";
 import Layout from "./components/Layout";
+import Signup from "./pages/Signup";
 
 function PrivateRoute({ children }) {
+  console.log("children",children)
   const { token } = useContext(AuthContext);
-  return token ? children : <Navigate to="/" />;
+  console.log("token",token)
+  return token || flag ? children : <Navigate to="/" />;
 }
 
 function App() {
@@ -19,7 +22,7 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Login/>} />
 
           <Route
             path="/dashboard"
@@ -29,6 +32,15 @@ function App() {
               </PrivateRoute>
             }
           />
+         
+            {/* <Route
+            path="/signup"
+            element={
+              <PrivateRoute>
+                <Layout><Signup/></Layout>
+              </PrivateRoute>
+            }
+          /> */}
 
           <Route
             path="/members"
@@ -63,6 +75,12 @@ function App() {
               <PrivateRoute>
                 <Layout><Live /></Layout>
               </PrivateRoute>
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+                <Signup />  
             }
           />
         </Routes>
