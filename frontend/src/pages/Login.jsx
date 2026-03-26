@@ -54,7 +54,7 @@ export default function Login() {
         <img src="/fft_logo.png" alt="fft_logo" style={styles.fft_logo} />
         {/* FFT Church bigger logo */}
         {/* <img src="/fft_logo.png" alt="FFT Church Logo" style={styles.fft_logo} /> */}
-        <h2 style={styles.title}>FFT Church</h2>
+        <h2 style={styles.title}>FFT</h2>
         <p style={styles.subtitle}>HIM We Proclaim 🙏</p>
 
         {error && <p style={styles.error}>{error}</p>}
@@ -140,7 +140,7 @@ const styles = {
   fft_logo: {
     width: 120,        // scaled down from original 740x740
     height: 120,       // keeps square ratio
-    marginBottom: 20,  // space below logo
+    marginBottom: 0,  // space below logo
     objectFit: "contain",
   },
   title: {
@@ -148,12 +148,13 @@ const styles = {
     color: "#6A1B9A",
   },
   subtitle: {
-    marginBottom: 20,
+    marginBottom: 0,
     color: "#555",
     fontSize: 14,
   },
   input: {
     width: "100%",
+    boxSizing: "border-box",
     padding: 12,
     margin: "10px 0",
     borderRadius: 8,
