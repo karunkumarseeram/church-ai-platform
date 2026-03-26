@@ -113,17 +113,19 @@ const styles = {
   fft_logo: {
     width: 120,        // scaled down from original 740x740
     height: 120,       // keeps square ratio
-    marginBottom: 20,  // space below logo
+    marginBottom: 0,  // space below logo
     objectFit: "contain",
   },
   title: {
-    marginBottom: 20,
+    marginBottom: 0,
     color: "#6A1B9A", // deep lavender
     fontSize: 22,
     fontWeight: "bold",
   },
   input: {
     width: "100%",
+    // width: "300px",
+    boxSizing: "border-box",
     padding: 12,
     margin: "10px 0",
     border: "1px solid #ccc",
@@ -145,6 +147,7 @@ const styles = {
     border: "none",
     borderRadius: 8,
     cursor: "pointer",
+    boxSizing: "border-box",
   },
   buttonHover: {
     background: "#4B0082", // darker indigo
