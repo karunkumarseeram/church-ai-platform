@@ -51,8 +51,9 @@ export default function Login() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <img src="/logo.png" alt="logo" style={styles.logo} />
-
+        <img src="/fft_logo.png" alt="fft_logo" style={styles.fft_logo} />
+        {/* FFT Church bigger logo */}
+        {/* <img src="/fft_logo.png" alt="FFT Church Logo" style={styles.fft_logo} /> */}
         <h2 style={styles.title}>FFT Church</h2>
         <p style={styles.subtitle}>HIM We Proclaim 🙏</p>
 
@@ -64,7 +65,7 @@ export default function Login() {
               style={styles.input}
               placeholder="Enter Email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {setEmail(e.target.value),console.log(email)}}
             />
             <button style={styles.button} onClick={sendOtp}>
               Send OTP
@@ -101,14 +102,31 @@ export default function Login() {
   );
 }
 
+// const styles = { container: { display: "flex", height: "100vh", justifyContent: "center", alignItems: "center", background: "linear-gradient(135deg, #6A1B9A, #87CEEB)", },
 // 🎨 MODERN STYLES
+// const styles = {
+//   container: {
+//     display: "flex",
+//     height: "100vh",
+//     justifyContent: "center",
+//     alignItems: "center",
+//     backgroundImage: "url('/bg-login.png')", // ✅ background image
+//     backgroundSize: "cover",
+//     backgroundPosition: "center",
+//     backgroundRepeat: "no-repeat",
+//   },
 const styles = {
   container: {
     display: "flex",
     height: "100vh",
     justifyContent: "center",
     alignItems: "center",
-    background: "linear-gradient(135deg, #6A1B9A, #87CEEB)",
+    backgroundImage: `
+      linear-gradient(135deg, rgba(106,27,154,0.7), rgba(135,206,235,0.7)), 
+      url('/Bg-login_pige.png')`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
   },
   card: {
     padding: 35,
@@ -119,9 +137,11 @@ const styles = {
     boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
     animation: "fadeIn 0.6s ease",
   },
-  logo: {
-    width: 70,
-    marginBottom: 10,
+  fft_logo: {
+    width: 120,        // scaled down from original 740x740
+    height: 120,       // keeps square ratio
+    marginBottom: 20,  // space below logo
+    objectFit: "contain",
   },
   title: {
     margin: 5,

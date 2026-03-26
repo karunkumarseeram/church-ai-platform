@@ -37,7 +37,8 @@ export default function Signup() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <img src="/logo.png" width={60} alt="logo" />
+        {/* <img src="/fft_logo.png" width={60} alt="fft_logo" /> */}
+        <img src="/fft_logo.png" width={60} alt="FFT Church Logo" style={styles.fft_logo} />
         <h2 style={styles.title}>FFT Church Signup</h2>
         <p style={{ fontSize: 13 }}>HIM We Proclaim</p>
 
@@ -87,14 +88,19 @@ export default function Signup() {
   );
 }
 
-
 const styles = {
   container: {
     display: "flex",
     height: "100vh",
     justifyContent: "center",
     alignItems: "center",
-    background: "linear-gradient(135deg, #e6e6fa, #87ceeb)", // lavender to blue
+    backgroundImage: `
+      linear-gradient(135deg, rgba(230,230,250,0.7), rgba(135,206,235,0.7)), 
+      url('/bg-signup.png')
+    `,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
   },
   card: {
     padding: 30,
@@ -103,6 +109,12 @@ const styles = {
     background: "#fff",
     borderRadius: 12,
     boxShadow: "0 6px 20px rgba(0,0,0,0.15)",
+  },
+  fft_logo: {
+    width: 120,        // scaled down from original 740x740
+    height: 120,       // keeps square ratio
+    marginBottom: 20,  // space below logo
+    objectFit: "contain",
   },
   title: {
     marginBottom: 20,
