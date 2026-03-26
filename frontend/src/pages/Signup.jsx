@@ -88,13 +88,27 @@ export default function Signup() {
 }
 
 
+// const styles = {
+//   container: {
+//     display: "flex",
+//     height: "100vh",
+//     justifyContent: "center",
+//     alignItems: "center",
+//     background: "linear-gradient(135deg, #e6e6fa, #87ceeb)", // lavender to blue
+//   },
 const styles = {
   container: {
     display: "flex",
     height: "100vh",
     justifyContent: "center",
     alignItems: "center",
-    background: "linear-gradient(135deg, #e6e6fa, #87ceeb)", // lavender to blue
+    backgroundImage: `
+      linear-gradient(135deg, rgba(230,230,250,0.7), rgba(135,206,235,0.7)), 
+      url('/bg-signup.png')
+    `,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
   },
   card: {
     padding: 30,

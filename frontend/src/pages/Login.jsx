@@ -64,7 +64,7 @@ export default function Login() {
               style={styles.input}
               placeholder="Enter Email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {setEmail(e.target.value),console.log(email)}}
             />
             <button style={styles.button} onClick={sendOtp}>
               Send OTP
@@ -101,14 +101,32 @@ export default function Login() {
   );
 }
 
+// const styles = { container: { display: "flex", height: "100vh", justifyContent: "center", alignItems: "center", background: "linear-gradient(135deg, #6A1B9A, #87CEEB)", },
 // 🎨 MODERN STYLES
+// const styles = {
+//   container: {
+//     display: "flex",
+//     height: "100vh",
+//     justifyContent: "center",
+//     alignItems: "center",
+//     backgroundImage: "url('/bg-login.png')", // ✅ background image
+//     backgroundSize: "cover",
+//     backgroundPosition: "center",
+//     backgroundRepeat: "no-repeat",
+//   },
 const styles = {
   container: {
     display: "flex",
     height: "100vh",
     justifyContent: "center",
     alignItems: "center",
-    background: "linear-gradient(135deg, #6A1B9A, #87CEEB)",
+    backgroundImage: `
+      linear-gradient(135deg, rgba(106,27,154,0.7), rgba(135,206,235,0.7)), 
+      url('/bg-login.png')
+    `,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
   },
   card: {
     padding: 35,

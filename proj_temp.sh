@@ -18,10 +18,10 @@ touch backend/app/core/database.py
 touch backend/app/core/security.py
 touch backend/app/core/dependencies.py
 
-touch backend/app/models/user.py
-touch backend/app/models/event.py
-touch backend/app/models/member.py
-touch backend/app/models/donation.py
+touch backend/app/models/chr_models.py
+# touch backend/app/models/event.py
+# touch backend/app/models/member.py
+# touch backend/app/models/donation.py
 
 touch backend/app/schemas/user.py
 touch backend/app/schemas/auth.py
@@ -56,13 +56,23 @@ touch frontend/public/logo.png
 touch frontend/src/components/Layout.jsx
 touch frontend/src/components/Sidebar.jsx
 touch frontend/src/components/Navbar.jsx
+touch frontend/src/components/AuthLayout.jsx
 
-touch frontend/src/pages/Login.jsx
+touch frontend/src/pages/AdminLogin.jsx
+touch frontend/src/pages/AdminUser.jsx
 touch frontend/src/pages/Dashboard.jsx
-touch frontend/src/pages/Members.jsx
-touch frontend/src/pages/Events.jsx
 touch frontend/src/pages/Donations.jsx
+touch frontend/src/pages/Events.jsx
+touch frontend/src/pages/ForgotPassword.jsx
+touch frontend/src/pages/Landing.jsx
 touch frontend/src/pages/Live.jsx
+touch frontend/src/pages/Login.jsx
+touch frontend/src/pages/Members.jsx
+touch frontend/src/pages/ResetPassword.jsx
+touch frontend/src/pages/ServiceDetails.jsx
+touch frontend/src/pages/Signup.jsx
+
+
 
 touch frontend/src/context/AuthContext.jsx
 
