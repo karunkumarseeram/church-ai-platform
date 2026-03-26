@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+SQLAlchemy
+psycopg2-binary
+pydantic-settings
+python-jose
+python-dotenv
+passlib[bcrypt]
+python-jose
+redis
+jinja2
+razorpay
+jwt
+passlib
