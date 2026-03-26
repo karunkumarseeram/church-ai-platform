@@ -12,3 +12,4 @@ jinja2
 razorpay
 jwt
 passlib
+pydantic[email]
