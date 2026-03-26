@@ -1,34 +1,89 @@
-// pages/Signup.jsx
 import { useState } from "react";
 import API from "../services/api";
+import { useNavigate } from "react-router-dom";
 
 export default function Signup() {
-  const [form, setForm] = useState({ name: "", email: "", phone: "" });
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirm: "",
+  });
+
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleSignup = async () => {
-    await API.post("/auth/signup", form);
-    alert("Request sent to admin");
+    if (!form.name || !form.email || !form.phone) {
+      setError("All fields are required");
+      return;
+    }
+
+    if (form.password !== form.confirm) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    try {
+      await API.post("/auth/signup", form);
+      alert("Signup successful. Please login.");
+      navigate("/"); // redirect to login
+    } catch (err) {
+      setError("Signup failed");
+    }
   };
 
   return (
-    // <div style={styles.container}>
-    //   <h2>Signup</h2>
-    //   <input placeholder="Name" onChange={(e)=>setForm({...form,name:e.target.value})}/>
-    //   <input placeholder="Email" onChange={(e)=>setForm({...form,email:e.target.value})}/>
-    //   <input placeholder="Phone" onChange={(e)=>setForm({...form,phone:e.target.value})}/>
-    //   <button onClick={handleSignup}>Signup</button>
-    // </div>
     <div style={styles.container}>
-  <div style={styles.card}>
-    <h2 style={styles.title}>Signup</h2>
-    <input style={styles.input} placeholder="Name" />
-    <input style={styles.input} placeholder="Email" />
-    <input style={styles.input} placeholder="Phone" />
-    <button style={styles.button}>Signup</button>
-    <p style={styles.link}>Already have an account? Login</p>
-  </div>
-</div>
+      <div style={styles.card}>
+        <img src="/logo.png" width={60} alt="logo" />
+        <h2 style={styles.title}>FFT Church Signup</h2>
+        <p style={{ fontSize: 13 }}>HIM We Proclaim</p>
 
+        {error && <p style={{ color: "red" }}>{error}</p>}
+
+        <input
+          style={styles.input}
+          placeholder="Name"
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+        />
+
+        <input
+          style={styles.input}
+          placeholder="Email"
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+        />
+
+        <input
+          style={styles.input}
+          placeholder="Phone"
+          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+        />
+
+        <input
+          style={styles.input}
+          type="password"
+          placeholder="Password"
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
+        />
+
+        <input
+          style={styles.input}
+          type="password"
+          placeholder="Confirm Password"
+          onChange={(e) => setForm({ ...form, confirm: e.target.value })}
+        />
+
+        <button style={styles.button} onClick={handleSignup}>
+          Signup
+        </button>
+
+        <p style={styles.link} onClick={() => navigate("/")}>
+          Already have an account? Login
+        </p>
+      </div>
+    </div>
   );
 }
 

@@ -5,16 +5,23 @@ import Members from "./pages/Members";
 import Events from "./pages/Events";
 import Donations from "./pages/Donations";
 import Live from "./pages/Live";
+import Signup from "./pages/Signup";
+import Services from "./pages/Services";
+import ServiceDetails from "./pages/ServiceDetails";
 import { AuthProvider, AuthContext } from "./context/AuthContext";
 import { useContext } from "react";
 import Layout from "./components/Layout";
-import Signup from "./pages/Signup";
 
+// 🔐 Private Route
 function PrivateRoute({ children }) {
-  console.log("children",children)
   const { token } = useContext(AuthContext);
-  console.log("token",token)
-  return token || flag ? children : <Navigate to="/" />;
+  return token ? children : <Navigate to="/" />;
+}
+
+// 🔓 Public Route
+function PublicRoute({ children }) {
+  const { token } = useContext(AuthContext);
+  return token ? <Navigate to="/dashboard" /> : children;
 }
 
 function App() {
@@ -22,7 +29,21 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Login/>} />
+
+          {/* 🔓 Public */}
+          <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
+          <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+          <Route path="/services" element={<Services />} />
+
+          {/* 🔐 Protected */}
+          <Route
+            path="/services/:id"
+            element={
+              <PrivateRoute>
+                <ServiceDetails />
+              </PrivateRoute>
+            }
+          />
 
           <Route
             path="/dashboard"
@@ -32,15 +53,6 @@ function App() {
               </PrivateRoute>
             }
           />
-         
-            {/* <Route
-            path="/signup"
-            element={
-              <PrivateRoute>
-                <Layout><Signup/></Layout>
-              </PrivateRoute>
-            }
-          /> */}
 
           <Route
             path="/members"
@@ -77,12 +89,10 @@ function App() {
               </PrivateRoute>
             }
           />
-          <Route
-            path="/signup"
-            element={
-                <Signup />  
-            }
-          />
+
+          {/* 🔄 Always LAST */}
+          <Route path="*" element={<Navigate to="/" />} />
+
         </Routes>
       </BrowserRouter>
     </AuthProvider>
@@ -90,7 +100,6 @@ function App() {
 }
 
 export default App;
-
 
 
 // import { useState } from 'react'
