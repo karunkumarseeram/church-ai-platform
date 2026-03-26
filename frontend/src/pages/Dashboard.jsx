@@ -1,8 +1,36 @@
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
+import API from "../services/api";
 
 export default function Dashboard() {
   const { token } = useContext(AuthContext);
+
+  const [stats, setStats] = useState({
+    members: 0,
+    events: 0,
+    donations: 0,
+  });
+
+  const [loading, setLoading] = useState(true);
+
+  const loadDashboard = async () => {
+    try {
+      const res = await API.get("/dashboard");
+      setStats(res.data);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  if (loading) {
+    return <h2 style={{ padding: 30 }}>Loading dashboard...</h2>;
+  }
 
   return (
     <div style={styles.container}>
@@ -13,33 +41,33 @@ export default function Dashboard() {
       <div style={styles.grid}>
         <div style={styles.card}>
           <h3>👥 Members</h3>
-          <p>120</p>
+          <p style={styles.statNumber}>{stats.members}</p>
         </div>
 
         <div style={styles.card}>
           <h3>📅 Events</h3>
-          <p>8 Upcoming</p>
+          <p style={styles.statNumber}>{stats.events}</p>
         </div>
 
         <div style={styles.card}>
           <h3>💳 Donations</h3>
-          <p>₹25,000</p>
+          <p style={styles.statNumber}>₹{stats.donations}</p>
         </div>
       </div>
 
-      {/* ⛪ Upcoming Services */}
+      {/* ⛪ Services */}
       <div style={styles.section}>
-        <h3>Upcoming Services</h3>
-        <ul>
+        <h3 style={styles.sectionTitle}>Upcoming Services</h3>
+        <ul style={styles.list}>
           <li>Sunday Worship - 9:00 AM</li>
           <li>Prayer Meeting - Wednesday 7:00 PM</li>
           <li>Youth Fellowship - Friday 6:00 PM</li>
         </ul>
       </div>
 
-      {/* ⚡ Quick Actions */}
+      {/* ⚡ Actions */}
       <div style={styles.section}>
-        <h3>Quick Actions</h3>
+        <h3 style={styles.sectionTitle}>Quick Actions</h3>
         <div style={styles.actions}>
           <button style={styles.button}>Add Event</button>
           <button style={styles.button}>View Members</button>
@@ -53,47 +81,79 @@ export default function Dashboard() {
 const styles = {
   container: {
     padding: 30,
-    background: "#f5f5f5",
     minHeight: "100vh",
+    background: "linear-gradient(135deg, #f5f5f5, #e6e6fa)",
   },
+
   title: {
     color: "#6A1B9A",
+    fontSize: 26,
+    fontWeight: "bold",
   },
+
   subtitle: {
-    marginBottom: 20,
+    marginBottom: 25,
     color: "#555",
+    fontSize: 14,
   },
+
   grid: {
     display: "flex",
     gap: 20,
     marginBottom: 30,
+    flexWrap: "wrap",
   },
+
   card: {
-    flex: 1,
-    padding: 20,
+    flex: "1 1 250px",
+    padding: 25,
     background: "#fff",
-    borderRadius: 10,
+    borderRadius: 12,
     textAlign: "center",
-    boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+    boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
+    transition: "0.3s",
+    cursor: "pointer",
   },
+
+  statNumber: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#6A1B9A",
+  },
+
   section: {
     marginTop: 20,
-    padding: 20,
+    padding: 25,
     background: "#fff",
-    borderRadius: 10,
-    boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+    borderRadius: 12,
+    boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
   },
+
+  sectionTitle: {
+    marginBottom: 15,
+    color: "#6A1B9A",
+  },
+
+  list: {
+    lineHeight: 1.8,
+    color: "#444",
+  },
+
   actions: {
     display: "flex",
-    gap: 10,
-    marginTop: 10,
+    gap: 15,
+    marginTop: 15,
+    flexWrap: "wrap",
   },
+
   button: {
-    padding: 10,
-    background: "#6A1B9A",
+    padding: "10px 18px",
+    background: "linear-gradient(135deg, #6A1B9A, #4B0082)",
     color: "#fff",
     border: "none",
-    borderRadius: 6,
+    borderRadius: 8,
     cursor: "pointer",
+    fontWeight: "bold",
+    transition: "0.3s",
   },
 };

@@ -2,7 +2,6 @@ import { useState, useContext } from "react";
 import API from "../services/api";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import Signup from "./Signup";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -43,12 +42,7 @@ export default function Login() {
       login(res.data.access_token);
 
       // 🔥 Role-based redirect
-      if (res.data.role === "ADMIN") {
-        navigate("/dashboard");
-      } else {
-        navigate("/dashboard"); // later you can change to user page
-      }
-
+      navigate("/dashboard");
     } catch (err) {
       setError("Invalid OTP");
     }
@@ -57,17 +51,19 @@ export default function Login() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <img src="/logo.png" width={70} />
-        <h2>FFT Church</h2>
-        <p>HIM We Proclaim</p>
+        <img src="/logo.png" alt="logo" style={styles.logo} />
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        <h2 style={styles.title}>FFT Church</h2>
+        <p style={styles.subtitle}>HIM We Proclaim 🙏</p>
+
+        {error && <p style={styles.error}>{error}</p>}
 
         {step === 1 && (
           <>
             <input
               style={styles.input}
               placeholder="Enter Email"
+              value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
             <button style={styles.button} onClick={sendOtp}>
@@ -81,6 +77,7 @@ export default function Login() {
             <input
               style={styles.input}
               placeholder="Enter OTP"
+              value={otp}
               onChange={(e) => setOtp(e.target.value)}
             />
             <button style={styles.button} onClick={verifyOtp}>
@@ -89,56 +86,85 @@ export default function Login() {
           </>
         )}
 
-        {/* 🔗 Navigation Links */}
-        <div style={{ marginTop: 20 }}>
-          <p style={styles.link} onClick={() =>{(navigate("/signup"))}}>
+        {/* 🔗 Links */}
+        <div style={styles.links}>
+          <p style={styles.link} onClick={() => navigate("/signup")}>
             New Member? Signup
           </p>
 
           <p style={styles.link} onClick={() => navigate("/forgot")}>
             Forgot Password?
           </p>
-          {/* <Signup/> */}
         </div>
       </div>
     </div>
   );
 }
 
-// 🎨 Styles
+// 🎨 MODERN STYLES
 const styles = {
   container: {
     display: "flex",
     height: "100vh",
     justifyContent: "center",
     alignItems: "center",
-    background: "#f5f5f5",
+    background: "linear-gradient(135deg, #6A1B9A, #87CEEB)",
   },
   card: {
-    padding: 30,
-    width: 300,
+    padding: 35,
+    width: 340,
     textAlign: "center",
     background: "#fff",
-    borderRadius: 10,
-    boxShadow: "0 0 10px rgba(0,0,0,0.1)",
+    borderRadius: 15,
+    boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+    animation: "fadeIn 0.6s ease",
+  },
+  logo: {
+    width: 70,
+    marginBottom: 10,
+  },
+  title: {
+    margin: 5,
+    color: "#6A1B9A",
+  },
+  subtitle: {
+    marginBottom: 20,
+    color: "#555",
+    fontSize: 14,
   },
   input: {
     width: "100%",
-    padding: 10,
+    padding: 12,
     margin: "10px 0",
+    borderRadius: 8,
+    border: "1px solid #ccc",
+    fontSize: 14,
+    outline: "none",
+    transition: "0.3s",
   },
   button: {
     width: "100%",
-    padding: 10,
+    padding: 12,
+    marginTop: 10,
     background: "#6A1B9A",
     color: "#fff",
     border: "none",
+    borderRadius: 8,
     cursor: "pointer",
+    fontWeight: "bold",
+    transition: "0.3s",
+  },
+  links: {
+    marginTop: 20,
   },
   link: {
     color: "#6A1B9A",
     cursor: "pointer",
+    fontSize: 14,
     margin: 5,
   },
+  error: {
+    color: "red",
+    fontSize: 13,
+  },
 };
-
