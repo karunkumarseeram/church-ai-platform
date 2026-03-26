@@ -123,7 +123,7 @@ const styles = {
     alignItems: "center",
     backgroundImage: `
       linear-gradient(135deg, rgba(106,27,154,0.7), rgba(135,206,235,0.7)), 
-      url('/Bg-login_pige.png')`,
+      url('/bg-login.png')`,
     backgroundSize: "cover",
     backgroundPosition: "center",
     backgroundRepeat: "no-repeat",

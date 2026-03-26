@@ -106,7 +106,7 @@ const styles = {
     padding: 30,
     width: 320,
     textAlign: "center",
-    background: "#fff",
+    // background: "#fff", # if you need to add
     borderRadius: 12,
     boxShadow: "0 6px 20px rgba(0,0,0,0.15)",
   },
