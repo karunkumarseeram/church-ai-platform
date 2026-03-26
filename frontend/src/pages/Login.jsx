@@ -51,7 +51,7 @@ export default function Login() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <img src="/fft_logo.png" alt="logo" style={styles.fft_logo} />
+        <img src="/fft_logo.png" alt="fft_logo" style={styles.fft_logo} />
         {/* FFT Church bigger logo */}
         {/* <img src="/fft_logo.png" alt="FFT Church Logo" style={styles.fft_logo} /> */}
         <h2 style={styles.title}>FFT Church</h2>

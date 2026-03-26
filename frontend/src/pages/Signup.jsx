@@ -110,7 +110,7 @@ const styles = {
     borderRadius: 12,
     boxShadow: "0 6px 20px rgba(0,0,0,0.15)",
   },
-  logo: {
+  fft_logo: {
     width: 120,        // scaled down from original 740x740
     height: 120,       // keeps square ratio
     marginBottom: 20,  // space below logo
