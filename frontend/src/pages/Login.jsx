@@ -51,8 +51,9 @@ export default function Login() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <img src="/logo.png" alt="logo" style={styles.logo} />
-
+        <img src="/fft_logo.png" alt="logo" style={styles.fft_logo} />
+        {/* FFT Church bigger logo */}
+        {/* <img src="/fft_logo.png" alt="FFT Church Logo" style={styles.fft_logo} /> */}
         <h2 style={styles.title}>FFT Church</h2>
         <p style={styles.subtitle}>HIM We Proclaim 🙏</p>
 
@@ -122,8 +123,7 @@ const styles = {
     alignItems: "center",
     backgroundImage: `
       linear-gradient(135deg, rgba(106,27,154,0.7), rgba(135,206,235,0.7)), 
-      url('/bg-login.png')
-    `,
+      url('/Bg-login_pige.png')`,
     backgroundSize: "cover",
     backgroundPosition: "center",
     backgroundRepeat: "no-repeat",
@@ -137,9 +137,11 @@ const styles = {
     boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
     animation: "fadeIn 0.6s ease",
   },
-  logo: {
-    width: 70,
-    marginBottom: 10,
+  fft_logo: {
+    width: 120,        // scaled down from original 740x740
+    height: 120,       // keeps square ratio
+    marginBottom: 20,  // space below logo
+    objectFit: "contain",
   },
   title: {
     margin: 5,
