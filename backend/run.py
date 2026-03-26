@@ -24,7 +24,7 @@ def main():
 
     uvicorn.run(
         "app.main:app",
-        host="0.0.0.0",
+        host="127.0.0.1",
         port=args.port,
         reload=True if args.env == "dev" else False
     )
