@@ -83,6 +83,7 @@ const styles = {
     padding: 30,
     minHeight: "100vh",
     background: "linear-gradient(135deg, #f5f5f5, #e6e6fa)",
+    width: "100%",
   },
 
   title: {
