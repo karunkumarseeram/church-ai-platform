@@ -1,18 +1,33 @@
+# app/services/otp_service.py
 import random
-import redis
-from app.core.config import settings
+from datetime import datetime, timedelta
+from sqlalchemy.orm import Session
+from app.models.chr_models import OTP
 
-r = redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
-
-
-def generate_otp():
+def generate_otp() -> str:
     return str(random.randint(100000, 999999))
 
+def create_otp(db: Session, email: str) -> str:
+    otp_code = generate_otp()
+    expires = datetime.utcnow() + timedelta(minutes=5)
 
-def save_otp(email: str, otp: str):
-    r.setex(f"otp:{email}", 300, otp)  # 5 min expiry
+    otp_entry = OTP(email=email, otp=otp_code, expires_at=expires, is_used=False)
+    db.add(otp_entry)
+    db.commit()
+    db.refresh(otp_entry)
 
+    return otp_code
 
-def verify_otp(email: str, otp: str):
-    stored = r.get(f"otp:{email}")
-    return stored == otp
+def verify_otp(db: Session, email: str, otp: str) -> bool:
+    otp_entry = (
+        db.query(OTP)
+        .filter(OTP.email == email, OTP.otp == otp, OTP.is_used == False)
+        .first()
+    )
+
+    if not otp_entry or otp_entry.expires_at < datetime.utcnow():
+        return False
+
+    otp_entry.is_used = True
+    db.commit()
+    return True
