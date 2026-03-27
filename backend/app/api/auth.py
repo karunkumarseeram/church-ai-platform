@@ -11,7 +11,7 @@ from app.core.security import hash_password, verify_password, create_access_toke
 from app.services.email_service import send_email
 from app.services.otp_service import create_otp,verify_otp
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["Auth"])
 
 # 🔹 Signup
 @router.post("/signup", response_model=UserOut)
