@@ -10,22 +10,21 @@ export default function Signup() {
     password: "",
     confirm: "",
   });
-
+  const [otp, setOtp] = useState("");
+  const [step, setStep] = useState("signup"); // "signup" | "otp"
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  // ✅ Email regex
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   const handleSignup = async () => {
-    if (!form.name || !form.email || !form.phone) {
+    if (!form.name || !form.email || !form.phone || !form.password) {
       setError("All fields are required");
       return;
     }
 
-    // ✅ Email validation
     if (!emailRegex.test(form.email)) {
-      setError("Please enter a valid email");
+      setError("Invalid email format");
       return;
     }
 
@@ -35,82 +34,100 @@ export default function Signup() {
     }
 
     try {
-      await API.post("/auth/signup", form);
-      alert("Signup successful. Please login.");
-      navigate("/"); // redirect to login
+      await API.post("/auth/signup", {
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        password: form.password,
+      });
+      setStep("otp");
+      await API.post("/auth/send-otp", { email: form.email });
+      setError("");
     } catch (err) {
-      setError("Signup failed");
+      setError(err.response?.data?.detail || "Signup failed");
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp) {
+      setError("Please enter OTP");
+      return;
+    }
+
+    try {
+      const res = await API.post("/auth/verify-otp", {
+        email: form.email,
+        otp,
+      });
+      localStorage.setItem("token", res.data.access_token);
+      alert("Signup & OTP verified successfully!");
+      navigate("/dashboard"); // redirect to dashboard
+    } catch (err) {
+      setError(err.response?.data?.detail || "Invalid OTP");
     }
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <img
-          src="/fft_logo.png"
-          width={60}
-          alt="FFT Church Logo"
-          style={styles.fft_logo}
-        />
-
+        <img src="/fft_logo.png" width={60} alt="FFT Church Logo" style={styles.fft_logo} />
         <h2 style={styles.title}>FFT Church Signup</h2>
         <p style={{ fontSize: 13 }}>HIM We Proclaim</p>
 
         {error && <p style={{ color: "red" }}>{error}</p>}
 
-        <input
-          style={styles.input}
-          placeholder="Name"
-          onChange={(e) =>
-            setForm({ ...form, name: e.target.value })
-          }
-        />
-
-        <input
-          style={styles.input}
-          placeholder="Email"
-          onChange={(e) => {
-            const value = e.target.value;
-            setForm({ ...form, email: value });
-
-            // ✅ Real-time validation
-            if (value && !emailRegex.test(value)) {
-              setError("Invalid email format");
-            } else {
-              setError("");
-            }
-          }}
-        />
-
-        <input
-          style={styles.input}
-          placeholder="Phone"
-          onChange={(e) =>
-            setForm({ ...form, phone: e.target.value })
-          }
-        />
-
-        <input
-          style={styles.input}
-          type="password"
-          placeholder="Password"
-          onChange={(e) =>
-            setForm({ ...form, password: e.target.value })
-          }
-        />
-
-        <input
-          style={styles.input}
-          type="password"
-          placeholder="Confirm Password"
-          onChange={(e) =>
-            setForm({ ...form, confirm: e.target.value })
-          }
-        />
-
-        <button style={styles.button} onClick={handleSignup}>
-          Signup
-        </button>
+        {step === "signup" ? (
+          <>
+            <input
+              style={styles.input}
+              placeholder="Name"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+            <input
+              style={styles.input}
+              placeholder="Email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+            <input
+              style={styles.input}
+              placeholder="Phone"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            />
+            <input
+              style={styles.input}
+              type="password"
+              placeholder="Password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+            />
+            <input
+              style={styles.input}
+              type="password"
+              placeholder="Confirm Password"
+              value={form.confirm}
+              onChange={(e) => setForm({ ...form, confirm: e.target.value })}
+            />
+            <button style={styles.button} onClick={handleSignup}>
+              Signup
+            </button>
+          </>
+        ) : (
+          <>
+            <p>Enter the OTP sent to your email: {form.email}</p>
+            <input
+              style={styles.input}
+              placeholder="OTP"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+            />
+            <button style={styles.button} onClick={handleVerifyOtp}>
+              Verify OTP
+            </button>
+          </>
+        )}
 
         <p style={styles.link} onClick={() => navigate("/")}>
           Already have an account? Login
@@ -132,7 +149,6 @@ const styles = {
     `,
     backgroundSize: "cover",
     backgroundPosition: "center",
-    backgroundRepeat: "no-repeat",
   },
   card: {
     padding: 30,
@@ -141,51 +157,9 @@ const styles = {
     borderRadius: 12,
     boxShadow: "0 6px 20px rgba(0,0,0,0.15)",
   },
-  fft_logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 0,
-    objectFit: "contain",
-  },
-  title: {
-    marginBottom: 0,
-    color: "#6A1B9A",
-    fontSize: 22,
-    fontWeight: "bold",
-  },
-  input: {
-    width: "100%",
-    boxSizing: "border-box",
-    padding: 12,
-    margin: "10px 0",
-    border: "1px solid #ccc",
-    borderRadius: 8,
-    fontSize: 14,
-    outline: "none",
-  },
-  inputFocus: {
-    borderColor: "#87ceeb",
-  },
-  button: {
-    width: "100%",
-    padding: 12,
-    marginTop: 15,
-    background: "#6A1B9A",
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    boxSizing: "border-box",
-  },
-  buttonHover: {
-    background: "#4B0082",
-  },
-  link: {
-    color: "#6A1B9A",
-    cursor: "pointer",
-    margin: 5,
-    fontSize: 14,
-  },
+  fft_logo: { width: 120, height: 120, marginBottom: 0, objectFit: "contain" },
+  title: { marginBottom: 0, color: "#6A1B9A", fontSize: 22, fontWeight: "bold" },
+  input: { width: "100%", padding: 12, margin: "10px 0", border: "1px solid #ccc", borderRadius: 8 },
+  button: { width: "100%", padding: 12, marginTop: 15, background: "#6A1B9A", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" },
+  link: { color: "#6A1B9A", cursor: "pointer", margin: 5, fontSize: 14 },
 };

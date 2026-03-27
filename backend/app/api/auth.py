@@ -26,13 +26,13 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
         email=user.email,
         phone=user.phone,
         hashed_password=hashed,
-        role=RoleEnum.MEMBER,  # default
+        role=RoleEnum.MEMBER,  # ✅ lowercase
         is_active=True,
         is_approved=False
     )
     db.add(new_user)
     db.commit()
-    db.refresh(new_user)
+    # db.refresh(new_user)  # always refresh after commit
     return new_user
 
 # 🔹 Send OTP
