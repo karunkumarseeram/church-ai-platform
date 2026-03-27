@@ -11,7 +11,7 @@ EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 
 def send_email(to_email, otp):
     msg = MIMEText(f"Your OTP is {otp}")
-    msg["Subject"] = "FFT Church OTP"
+    msg["Subject"] = "HIM We Proclaim OTP"
     msg["From"] = EMAIL_USER
     msg["To"] = to_email
 

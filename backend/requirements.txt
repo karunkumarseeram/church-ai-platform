@@ -6,7 +6,9 @@ pydantic-settings
 python-jose
 python-dotenv
 # passlib[bcrypt]
-passlib[bcrypt] bcrypt==4.0.1
+# passlib[bcrypt] bcrypt==4.0.1
+passlib==1.7.4
+bcrypt==4.1.2
 python-jose
 redis
 jinja2

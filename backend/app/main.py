@@ -1,16 +1,29 @@
 from fastapi import FastAPI
 from app.core.init_dbse import init_db
 from app.api import auth, events, dashboard
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="FFT Church API")
 
+# ✅ CORS setup
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,       # allow frontend origin
+    allow_credentials=True,
+    allow_methods=["*"],         # allow all methods
+    allow_headers=["*"],         # allow all headers
+)
+
 # ✅ Include routers
-# app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(auth.router)
 app.include_router(events.router)
 app.include_router(dashboard.router)
-# app.include_router(events.router, prefix="/events", tags=["Events"])
-# app.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
+
 
 # 🔹 Initialize database on startup
 # @app.on_event("startup")

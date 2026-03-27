@@ -9,17 +9,24 @@ from sqlalchemy.orm import Session
 from app.models.chr_models import User
 from app.core.config import settings
 from app.core.database import SessionLocal
+import hashlib
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__truncate_error=True
+)
 
 def hash_password(password: str) -> str:
-    # Encode to bytes and truncate to 72 bytes
-    pw_bytes = password.encode("utf-8")[:72]
-    return pwd_context.hash(pw_bytes)
+    # Use hex digest (64 chars, always < 72 bytes)
+    digest = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    return pwd_context.hash(digest)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    pw_bytes = plain_password.encode("utf-8")[:72]
-    return pwd_context.verify(pw_bytes, hashed_password)
+    digest = hashlib.sha256(plain_password.encode("utf-8")).hexdigest()
+    return pwd_context.verify(digest, hashed_password)
+
+
 
 # 🔹 JWT token creation
 def create_access_token(data: dict, expires_minutes: int = None) -> str:
