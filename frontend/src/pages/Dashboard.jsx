@@ -34,8 +34,10 @@ export default function Dashboard() {
 
   return (
     <div style={styles.container}>
-      <h2 style={styles.title}>🙏 Welcome to FFT Dashboard</h2>
-      <p style={styles.subtitle}>HIM We Proclaim</p>
+      {/* <h2 style={styles.title}>🙏 Welcome to FFT Dashboard</h2>
+      <p style={styles.subtitle}>HIM We Proclaim</p> */}
+      <h2 style={{ marginBottom: 4, ...styles.title }}>🙏 Welcome to FFT Dashboard</h2>
+      <p style={{ marginBottom: 20, ...styles.subtitle }}>HIM We Proclaim</p>
 
       {/* 📊 Stats */}
       <div style={styles.grid}>
@@ -82,7 +84,8 @@ const styles = {
   container: {
     padding: 30,
     minHeight: "100vh",
-    background: "linear-gradient(135deg, #f5f5f5, #e6e6fa)",
+    // ✅ Full page linear gradient lavender → ice blue
+    background: "linear-gradient(135deg, #E6E6FA, #ADD8E6)",
   },
 
   title: {
@@ -107,7 +110,8 @@ const styles = {
   card: {
     flex: "1 1 250px",
     padding: 25,
-    background: "#fff",
+    // ✅ Slight lavender tint on cards
+    background: "rgba(255, 255, 255, 0.9)",
     borderRadius: 12,
     textAlign: "center",
     boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
@@ -124,7 +128,7 @@ const styles = {
   section: {
     marginTop: 20,
     padding: 25,
-    background: "#fff",
+    background: "rgba(255, 255, 255, 0.9)",
     borderRadius: 12,
     boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
   },
@@ -148,6 +152,7 @@ const styles = {
 
   button: {
     padding: "10px 18px",
+    // ✅ Gradient buttons lavender → indigo
     background: "linear-gradient(135deg, #6A1B9A, #4B0082)",
     color: "#fff",
     border: "none",
