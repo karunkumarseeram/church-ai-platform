@@ -1,23 +1,40 @@
 import uuid
 import enum
 from datetime import datetime
-from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Boolean, Enum
+
+from sqlalchemy import (
+    Column,
+    String,
+    Float,
+    DateTime,
+    ForeignKey,
+    Boolean,
+    Enum,
+    Integer
+)
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+
 from app.core.database import Base
 
 
 # ================= BASE MODEL =================
 class BaseModel:
+    __abstract__ = True  # ✅ IMPORTANT
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
+    is_deleted = Column(Boolean, default=False)  # ✅ Soft delete
+
 
 # ================= ENUMS =================
 class RoleEnum(str, enum.Enum):
     ADMIN = "ADMIN"
-    USER = "USER"
+    PASTOR = "PASTOR"
+    MEMBER = "MEMBER"
 
 
 class PaymentMethod(str, enum.Enum):
@@ -34,13 +51,21 @@ class User(Base, BaseModel):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     phone = Column(String)
-    password = Column(String, nullable=False)
 
-    role = Column(Enum(RoleEnum), default=RoleEnum.USER)
+    hashed_password = Column(String, nullable=False)  # ✅ FIXED
+
+    role = Column(Enum(RoleEnum), default=RoleEnum.MEMBER)
 
     is_active = Column(Boolean, default=True)
-    is_approved = Column(Boolean, default=False)   # 🔥 ADMIN APPROVAL
+    is_approved = Column(Boolean, default=False)
+
     last_login = Column(DateTime(timezone=True), nullable=True)
+    last_login_ip = Column(String)
+
+    # ✅ Relationships
+    donations = relationship("Donation", back_populates="user")
+    members = relationship("Member", back_populates="user")
+    prayer_requests = relationship("PrayerRequest", back_populates="user")
 
 
 # ================= MEMBERS =================
@@ -50,7 +75,9 @@ class Member(Base, BaseModel):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     full_name = Column(String)
     address = Column(String)
-    age = Column(String)
+    age = Column(Integer)  # ✅ FIXED
+
+    user = relationship("User", back_populates="members")
 
 
 # ================= EVENTS =================
@@ -59,7 +86,11 @@ class Event(Base, BaseModel):
 
     title = Column(String, nullable=False)
     description = Column(String)
+
     event_date = Column(DateTime(timezone=True), default=datetime.utcnow)
+    location = Column(String)
+
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
 
 
 # ================= DONATIONS =================
@@ -67,16 +98,24 @@ class Donation(Base, BaseModel):
     __tablename__ = "donations"
 
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+
     donor_name = Column(String, nullable=False)
     amount = Column(Float, nullable=False)
 
     payment_method = Column(Enum(PaymentMethod))
     transaction_id = Column(String)
 
+    status = Column(String, default="SUCCESS")  # ✅ NEW
+
     location = Column(String)
     ip_address = Column(String)
 
-    donated_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    currency = Column(String, default="INR")
+
+    donated_at = Column(DateTime(timezone=True), default=datetime.utcnow, index=True)
+
+    # ✅ Relationship
+    user = relationship("User", back_populates="donations")
 
 
 # ================= VERSES =================
@@ -85,6 +124,7 @@ class Verse(Base, BaseModel):
 
     title = Column(String)
     content = Column(String, nullable=False)
+
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
 
 
@@ -93,10 +133,14 @@ class PrayerRequest(Base, BaseModel):
     __tablename__ = "prayer_requests"
 
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+
     name = Column(String)
     request = Column(String, nullable=False)
 
     is_approved = Column(Boolean, default=False)
+
+    # ✅ Relationship
+    user = relationship("User", back_populates="prayer_requests")
 
 
 # ================= ADMIN ACTION LOG =================
@@ -110,3 +154,14 @@ class AdminActionLog(Base, BaseModel):
 
     location = Column(String)
     ip_address = Column(String)
+
+
+# ================= OTP TABLE =================
+class OTP(Base, BaseModel):
+    __tablename__ = "otps"
+
+    email = Column(String, index=True)
+    otp = Column(String, nullable=False)
+
+    expires_at = Column(DateTime, nullable=False)
+    is_used = Column(Boolean, default=False)

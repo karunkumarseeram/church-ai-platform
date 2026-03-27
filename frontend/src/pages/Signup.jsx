@@ -14,9 +14,18 @@ export default function Signup() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  // ✅ Email regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const handleSignup = async () => {
     if (!form.name || !form.email || !form.phone) {
       setError("All fields are required");
+      return;
+    }
+
+    // ✅ Email validation
+    if (!emailRegex.test(form.email)) {
+      setError("Please enter a valid email");
       return;
     }
 
@@ -37,8 +46,13 @@ export default function Signup() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        {/* <img src="/fft_logo.png" width={60} alt="fft_logo" /> */}
-        <img src="/fft_logo.png" width={60} alt="FFT Church Logo" style={styles.fft_logo} />
+        <img
+          src="/fft_logo.png"
+          width={60}
+          alt="FFT Church Logo"
+          style={styles.fft_logo}
+        />
+
         <h2 style={styles.title}>FFT Church Signup</h2>
         <p style={{ fontSize: 13 }}>HIM We Proclaim</p>
 
@@ -47,33 +61,51 @@ export default function Signup() {
         <input
           style={styles.input}
           placeholder="Name"
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, name: e.target.value })
+          }
         />
 
         <input
           style={styles.input}
           placeholder="Email"
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          onChange={(e) => {
+            const value = e.target.value;
+            setForm({ ...form, email: value });
+
+            // ✅ Real-time validation
+            if (value && !emailRegex.test(value)) {
+              setError("Invalid email format");
+            } else {
+              setError("");
+            }
+          }}
         />
 
         <input
           style={styles.input}
           placeholder="Phone"
-          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, phone: e.target.value })
+          }
         />
 
         <input
           style={styles.input}
           type="password"
           placeholder="Password"
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, password: e.target.value })
+          }
         />
 
         <input
           style={styles.input}
           type="password"
           placeholder="Confirm Password"
-          onChange={(e) => setForm({ ...form, confirm: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, confirm: e.target.value })
+          }
         />
 
         <button style={styles.button} onClick={handleSignup}>
@@ -106,25 +138,23 @@ const styles = {
     padding: 30,
     width: 320,
     textAlign: "center",
-    // background: "#fff", # if you need to add
     borderRadius: 12,
     boxShadow: "0 6px 20px rgba(0,0,0,0.15)",
   },
   fft_logo: {
-    width: 120,        // scaled down from original 740x740
-    height: 120,       // keeps square ratio
-    marginBottom: 0,  // space below logo
+    width: 120,
+    height: 120,
+    marginBottom: 0,
     objectFit: "contain",
   },
   title: {
     marginBottom: 0,
-    color: "#6A1B9A", // deep lavender
+    color: "#6A1B9A",
     fontSize: 22,
     fontWeight: "bold",
   },
   input: {
     width: "100%",
-    // width: "300px",
     boxSizing: "border-box",
     padding: 12,
     margin: "10px 0",
@@ -150,7 +180,7 @@ const styles = {
     boxSizing: "border-box",
   },
   buttonHover: {
-    background: "#4B0082", // darker indigo
+    background: "#4B0082",
   },
   link: {
     color: "#6A1B9A",
