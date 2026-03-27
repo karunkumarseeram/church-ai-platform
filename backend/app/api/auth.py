@@ -1,54 +1,75 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.schemas.auth import *
-from app.models.chr_models import User
-from app.core.dependencies import get_db
-from app.services.otp_service import generate_otp, save_otp, verify_otp
-from app.services.email_service import send_email
-from app.core.security import create_access_token
+from datetime import datetime, timedelta
+import random
 
-router = APIRouter(prefix="/auth", tags=["Auth"])
+from app.core.database import get_db
+from app.models.chr_models import User, OTP, RoleEnum
+from app.schemas.user import UserCreate, UserOut
+from app.schemas.auth import SendOTP, VerifyOTP, Token
+from app.core.security import hash_password, verify_password, create_access_token
 
+router = APIRouter(prefix="/auth", tags=["auth"])
 
-# 🔹 SEND OTP
-@router.post("/send-otp")
-def send_otp(data: LoginOTPRequest):
-    otp = generate_otp()
-    save_otp(data.email, otp)
+# 🔹 Signup
+@router.post("/signup", response_model=UserOut)
+def signup(user: UserCreate, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.email == user.email).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
 
-    send_email(data.email, otp)
+    hashed = hash_password(user.password)
+    new_user = User(
+        name=user.name,
+        email=user.email,
+        phone=user.phone,
+        hashed_password=hashed,
+        role=RoleEnum.MEMBER,  # default
+        is_active=True,
+        is_approved=False
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
 
-    return {"msg": "OTP sent"}
+# 🔹 Send OTP
+@router.post("/send-otp", response_model=dict)
+def send_otp(data: SendOTP, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == data.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
+    otp_code = str(random.randint(100000, 999999))
+    expires = datetime.utcnow() + timedelta(minutes=5)
 
-# 🔹 VERIFY OTP
-@router.post("/verify-otp")
-def verify(data: VerifyOTPRequest, db: Session = Depends(get_db)):
-    if not verify_otp(data.email, data.otp):
-        return {"error": "Invalid OTP"}
+    otp_entry = OTP(email=data.email, otp=otp_code, expires_at=expires, is_used=False)
+    db.add(otp_entry)
+    db.commit()
+
+    # TODO: send otp_code via email
+    print(f"OTP for {data.email}: {otp_code}")  # temporary
+
+    return {"message": "OTP sent successfully"}
+
+# 🔹 Verify OTP & login
+@router.post("/verify-otp", response_model=Token)
+def verify_otp(data: VerifyOTP, db: Session = Depends(get_db)):
+    otp_entry = (
+        db.query(OTP)
+        .filter(OTP.email == data.email, OTP.otp == data.otp, OTP.is_used == False)
+        .first()
+    )
+
+    if not otp_entry or otp_entry.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+
+    otp_entry.is_used = True
+    db.commit()
 
     user = db.query(User).filter(User.email == data.email).first()
+    if not user.is_approved:
+        raise HTTPException(status_code=403, detail="User not approved by admin")
 
-    if not user:
-        return {"error": "User not found"}
-
-    if not user.is_active:
-        return {"error": "Waiting for admin approval"}
-
-    token = create_access_token({"user_id": str(user.id)})
-
-    return {
-        "access_token": token,
-        "role": user.role
-    }
-
-
-# 🔹 RESEND OTP
-@router.post("/resend-otp")
-def resend(data: ResendOTPRequest):
-    otp = generate_otp()
-    save_otp(data.email, otp)
-
-    send_email(data.email, otp)
-
-    return {"msg": "OTP resent"}
+    access_token = create_access_token({"user_id": str(user.id), "role": user.role.value})
+    return {"access_token": access_token, "token_type": "bearer"}

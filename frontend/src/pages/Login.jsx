@@ -12,8 +12,17 @@ export default function Login() {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
+  // ✅ Email regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   // 🔹 Send OTP
   const sendOtp = async () => {
+    // ✅ Prevent invalid email API call
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email");
+      return;
+    }
+
     try {
       const res = await API.post("/auth/send-otp", { email });
 
@@ -52,8 +61,6 @@ export default function Login() {
     <div style={styles.container}>
       <div style={styles.card}>
         <img src="/fft_logo.png" alt="fft_logo" style={styles.fft_logo} />
-        {/* FFT Church bigger logo */}
-        {/* <img src="/fft_logo.png" alt="FFT Church Logo" style={styles.fft_logo} /> */}
         <h2 style={styles.title}>FFT</h2>
         <p style={styles.subtitle}>HIM We Proclaim 🙏</p>
 
@@ -65,7 +72,17 @@ export default function Login() {
               style={styles.input}
               placeholder="Enter Email"
               value={email}
-              onChange={(e) => {setEmail(e.target.value),console.log(email)}}
+              onChange={(e) => {
+                const value = e.target.value;
+                setEmail(value);
+
+                // ✅ Real-time validation
+                if (value && !emailRegex.test(value)) {
+                  setError("Invalid email format");
+                } else {
+                  setError("");
+                }
+              }}
             />
             <button style={styles.button} onClick={sendOtp}>
               Send OTP
@@ -102,19 +119,6 @@ export default function Login() {
   );
 }
 
-// const styles = { container: { display: "flex", height: "100vh", justifyContent: "center", alignItems: "center", background: "linear-gradient(135deg, #6A1B9A, #87CEEB)", },
-// 🎨 MODERN STYLES
-// const styles = {
-//   container: {
-//     display: "flex",
-//     height: "100vh",
-//     justifyContent: "center",
-//     alignItems: "center",
-//     backgroundImage: "url('/bg-login.png')", // ✅ background image
-//     backgroundSize: "cover",
-//     backgroundPosition: "center",
-//     backgroundRepeat: "no-repeat",
-//   },
 const styles = {
   container: {
     display: "flex",
@@ -138,9 +142,9 @@ const styles = {
     animation: "fadeIn 0.6s ease",
   },
   fft_logo: {
-    width: 120,        // scaled down from original 740x740
-    height: 120,       // keeps square ratio
-    marginBottom: 0,  // space below logo
+    width: 120,
+    height: 120,
+    marginBottom: 0,
     objectFit: "contain",
   },
   title: {

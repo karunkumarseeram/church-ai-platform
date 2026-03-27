@@ -1,18 +1,23 @@
 from pydantic import BaseModel
+from typing import Optional
 from datetime import datetime
 from uuid import UUID
 
 
-class EventCreate(BaseModel):
+class EventBase(BaseModel):
     title: str
-    description: str
+    description: Optional[str] = None
+    location: Optional[str] = None
+    event_date: Optional[datetime]
 
 
-class EventOut(BaseModel):
+class EventCreate(EventBase):
+    pass
+
+
+class EventOut(EventBase):
     id: UUID
-    title: str
-    description: str
-    event_date: datetime
+    created_by: Optional[UUID]
 
     class Config:
         from_attributes = True
