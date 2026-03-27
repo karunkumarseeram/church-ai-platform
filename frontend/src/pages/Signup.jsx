@@ -159,7 +159,7 @@ const styles = {
   },
   fft_logo: { width: 120, height: 120, marginBottom: 0, objectFit: "contain" },
   title: { marginBottom: 0, color: "#6A1B9A", fontSize: 22, fontWeight: "bold" },
-  input: { width: "100%", padding: 12, margin: "10px 0", border: "1px solid #ccc", borderRadius: 8 },
+  input: { width: "100%", padding: 12,boxSizing: "border-box", margin: "10px 0", border: "1px solid #ccc", borderRadius: 8 },
   button: { width: "100%", padding: 12, marginTop: 15, background: "#6A1B9A", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" },
   link: { color: "#6A1B9A", cursor: "pointer", margin: 5, fontSize: 14 },
 };
