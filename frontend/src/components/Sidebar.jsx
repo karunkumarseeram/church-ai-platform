@@ -1,32 +1,44 @@
-import { Drawer, List, ListItem, ListItemText } from "@mui/material";
-import { Link } from "react-router-dom";
+import { Box, List, ListItem, ListItemText } from "@mui/material";
+import { NavLink } from "react-router-dom";
+
+const menuItems = [
+  { name: "Dashboard", path: "/dashboard" },
+  { name: "Members", path: "/members" },
+  { name: "Events", path: "/events" },
+  { name: "Donations", path: "/donations" },
+  { name: "Live", path: "/live" },
+];
 
 export default function Sidebar() {
   return (
-    <Drawer variant="permanent">
-      <div style={{ padding: 20, textAlign: "center" }}>
-        <img src="/logo.png" width={60} />
-        <h3>FFT Temple</h3>
-        <p>HIM We Proclaim</p>
-      </div>
-
+    <Box
+      sx={{
+        width: 240,
+        bgcolor: "#fff",
+        borderRight: "1px solid #e5e4e7",
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
+      }}
+    >
+      <Box sx={{ p: 3, fontWeight: "bold", fontSize: 20, color: "#6A1B9A" }}>
+        FFT Menu
+      </Box>
       <List>
-        <ListItem button component={Link} to="/dashboard">
-          <ListItemText primary="Dashboard" />
-        </ListItem>
-        <ListItem button component={Link} to="/members">
-          <ListItemText primary="Members" />
-        </ListItem>
-        <ListItem button component={Link} to="/events">
-          <ListItemText primary="Events" />
-        </ListItem>
-        <ListItem button component={Link} to="/donations">
-          <ListItemText primary="Donations" />
-        </ListItem>
-        <ListItem button component={Link} to="/live">
-          <ListItemText primary="Live" />
-        </ListItem>
+        {menuItems.map((item) => (
+          <ListItem
+            key={item.name}
+            button
+            component={NavLink}
+            to={item.path}
+            sx={{
+              "&.active": { backgroundColor: "rgba(170,59,255,0.1)", color: "#aa3bff" },
+            }}
+          >
+            <ListItemText primary={item.name} />
+          </ListItem>
+        ))}
       </List>
-    </Drawer>
+    </Box>
   );
 }
