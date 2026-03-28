@@ -1,21 +1,34 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useContext } from "react";
+import { AuthProvider, AuthContext } from "./context/AuthContext";
+
 import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Members from "./pages/Members";
 import Events from "./pages/Events";
 import Donations from "./pages/Donations";
 import Live from "./pages/Live";
-import Signup from "./pages/Signup";
 import Services from "./pages/Services";
 import ServiceDetails from "./pages/ServiceDetails";
-import { AuthProvider, AuthContext } from "./context/AuthContext";
-import { useContext } from "react";
+
 import Layout from "./components/Layout";
 
-// 🔐 Private Route
-function PrivateRoute({ children }) {
-  const { token } = useContext(AuthContext);
-  return token ? children : <Navigate to="/" />;
+// 🔐 Private Route with optional role restriction
+function PrivateRoute({ children, allowedRoles = [] }) {
+  const { token, userRole } = useContext(AuthContext);
+
+  if (!token) return <Navigate to="/" />;
+
+  if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+    return (
+      <div style={{ padding: 30, color: "#6A1B9A", fontWeight: "bold" }}>
+        Access Denied. Admins only.
+      </div>
+    );
+  }
+
+  return children;
 }
 
 // 🔓 Public Route
@@ -30,17 +43,17 @@ function App() {
       <BrowserRouter>
         <Routes>
 
-          {/* 🔓 Public */}
+          {/* 🔓 Public Routes */}
           <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
           <Route path="/services" element={<Services />} />
 
-          {/* 🔐 Protected */}
+          {/* 🔐 Protected Routes */}
           <Route
             path="/services/:id"
             element={
               <PrivateRoute>
-                <ServiceDetails />
+                <Layout><ServiceDetails /></Layout>
               </PrivateRoute>
             }
           />
@@ -54,10 +67,11 @@ function App() {
             }
           />
 
+          {/* Admin-only Members Page */}
           <Route
             path="/members"
             element={
-              <PrivateRoute>
+              <PrivateRoute allowedRoles={["ADMIN"]}>
                 <Layout><Members /></Layout>
               </PrivateRoute>
             }
@@ -90,7 +104,7 @@ function App() {
             }
           />
 
-          {/* 🔄 Always LAST */}
+          {/* 🔄 Catch-all route */}
           <Route path="*" element={<Navigate to="/" />} />
 
         </Routes>
