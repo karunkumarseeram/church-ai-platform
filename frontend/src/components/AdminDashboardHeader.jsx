@@ -24,12 +24,13 @@ export default function AdminDashboardHeader({ userRole }) {
     }
   };
 
-  // Poll every 10 seconds
   useEffect(() => {
-    loadPending();
-    const interval = setInterval(loadPending, 10000);
-    return () => clearInterval(interval);
-  }, [token]);
+  if (!token || userRole !== "ADMIN") return;
+
+  loadPending(); 
+  const interval = setInterval(loadPending, 900000); // poll every 15 minutes
+  return () => clearInterval(interval);
+}, [token, userRole]);
 
   // Approve / Revoke action
   const handleAction = async (userId, action) => {

@@ -73,3 +73,16 @@ def revoke_user(user_id: str, db: Session = Depends(get_db), admin=Depends(admin
     user.is_approved = False
     db.commit()
     return {"message": f"{user.name} access revoked"}
+
+# List pending users for bell notifications
+@router.get("/pending")
+def pending_users(db: Session = Depends(get_db), admin=Depends(admin_required)):
+    pending = db.query(User).filter(User.is_approved == False).order_by(User.created_at.desc()).all()
+    return [
+        {
+            "id": str(u.id),
+            "name": u.name,
+            "email": u.email,
+            "created_at": u.created_at,
+        } for u in pending
+    ]
