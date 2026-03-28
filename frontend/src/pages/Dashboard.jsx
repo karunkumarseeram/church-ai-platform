@@ -1,16 +1,12 @@
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import API from "../services/api";
+import AdminDashboardHeader from "../components/AdminDashboardHeader";
 
 export default function Dashboard() {
-  const { token } = useContext(AuthContext);
+  const { token, userRole } = useContext(AuthContext);
 
-  const [stats, setStats] = useState({
-    members: 0,
-    events: 0,
-    donations: 0,
-  });
-
+  const [stats, setStats] = useState({ members: 0, events: 0, donations: 0 });
   const [loading, setLoading] = useState(true);
 
   const loadDashboard = async () => {
@@ -28,29 +24,27 @@ export default function Dashboard() {
     loadDashboard();
   }, []);
 
-  if (loading) {
-    return <h2 style={{ padding: 30 }}>Loading dashboard...</h2>;
-  }
+  if (loading) return <h2 style={{ padding: 30 }}>Loading dashboard...</h2>;
+
+  const isAdmin = userRole === "ADMIN";
 
   return (
     <div style={styles.container}>
-      {/* <h2 style={styles.title}>🙏 Welcome to FFT Dashboard</h2>
-      <p style={styles.subtitle}>HIM We Proclaim</p> */}
-      <h2 style={{ marginBottom: 4, ...styles.title }}>🙏 Welcome to FFT Dashboard</h2>
-      <p style={{ marginBottom: 20, ...styles.subtitle }}>HIM We Proclaim</p>
+      {/* 🔔 Header */}
+      <AdminDashboardHeader userRole={userRole} />
 
       {/* 📊 Stats */}
       <div style={styles.grid}>
-        <div style={styles.card}>
-          <h3>👥 Members</h3>
-          <p style={styles.statNumber}>{stats.members}</p>
-        </div>
-
+        {isAdmin && (
+          <div style={styles.card}>
+            <h3>👥 Members</h3>
+            <p style={styles.statNumber}>{stats.members}</p>
+          </div>
+        )}
         <div style={styles.card}>
           <h3>📅 Events</h3>
           <p style={styles.statNumber}>{stats.events}</p>
         </div>
-
         <div style={styles.card}>
           <h3>💳 Donations</h3>
           <p style={styles.statNumber}>₹{stats.donations}</p>
@@ -67,13 +61,25 @@ export default function Dashboard() {
         </ul>
       </div>
 
-      {/* ⚡ Actions */}
+      {/* ⚡ Quick Actions */}
       <div style={styles.section}>
         <h3 style={styles.sectionTitle}>Quick Actions</h3>
         <div style={styles.actions}>
-          <button style={styles.button}>Add Event</button>
-          <button style={styles.button}>View Members</button>
-          <button style={styles.button}>View Donations</button>
+          {isAdmin ? (
+            <>
+              <button style={styles.button}>Add Event</button>
+              <button style={styles.button}>View Members</button>
+              <button style={styles.button}>View Donations</button>
+              <button style={styles.button}>Raise Prayer Request</button>
+              <button style={styles.button}>Accept Prayer Requests</button>
+            </>
+          ) : (
+            <>
+              <button style={styles.button}>Raise Prayer Request</button>
+              <button style={styles.button}>View Upcoming Events</button>
+              <button style={styles.button}>Donate</button>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -81,84 +87,21 @@ export default function Dashboard() {
 }
 
 const styles = {
-  container: {
-    padding: 30,
-    minHeight: "100vh",
-    // ✅ Full page linear gradient lavender → ice blue
-    background: "linear-gradient(135deg, #E6E6FA, #ADD8E6)",
-  },
-
-  title: {
-    color: "#6A1B9A",
-    fontSize: 26,
-    fontWeight: "bold",
-  },
-
-  subtitle: {
-    marginBottom: 25,
-    color: "#555",
-    fontSize: 14,
-  },
-
-  grid: {
-    display: "flex",
-    gap: 20,
-    marginBottom: 30,
-    flexWrap: "wrap",
-  },
-
+  container: { padding: 30, minHeight: "100vh", background: "linear-gradient(135deg, #E6E6FA, #ADD8E6)" },
+  grid: { display: "flex", gap: 20, marginBottom: 30, flexWrap: "wrap" },
   card: {
     flex: "1 1 250px",
     padding: 25,
-    // ✅ Slight lavender tint on cards
     background: "rgba(255, 255, 255, 0.9)",
     borderRadius: 12,
     textAlign: "center",
     boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
-    transition: "0.3s",
     cursor: "pointer",
   },
-
-  statNumber: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#6A1B9A",
-  },
-
-  section: {
-    marginTop: 20,
-    padding: 25,
-    background: "rgba(255, 255, 255, 0.9)",
-    borderRadius: 12,
-    boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
-  },
-
-  sectionTitle: {
-    marginBottom: 15,
-    color: "#6A1B9A",
-  },
-
-  list: {
-    lineHeight: 1.8,
-    color: "#444",
-  },
-
-  actions: {
-    display: "flex",
-    gap: 15,
-    marginTop: 15,
-    flexWrap: "wrap",
-  },
-
-  button: {
-    padding: "10px 18px",
-    // ✅ Gradient buttons lavender → indigo
-    background: "linear-gradient(135deg, #6A1B9A, #4B0082)",
-    color: "#fff",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontWeight: "bold",
-    transition: "0.3s",
-  },
+  statNumber: { fontSize: 28, fontWeight: "bold", color: "#6A1B9A" },
+  section: { marginTop: 20, padding: 25, background: "rgba(255, 255, 255, 0.9)", borderRadius: 12, boxShadow: "0 6px 20px rgba(0,0,0,0.1)" },
+  sectionTitle: { marginBottom: 15, color: "#6A1B9A" },
+  list: { lineHeight: 1.8, color: "#444" },
+  actions: { display: "flex", gap: 15, marginTop: 15, flexWrap: "wrap" },
+  button: { padding: "10px 18px", background: "linear-gradient(135deg, #6A1B9A, #4B0082)", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: "bold" },
 };
