@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status,BackgroundTasks
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import random
-
+from app.services.email_service import send_welcome_email
 from app.core.database import get_db
 from app.models.chr_models import User, OTP, RoleEnum
 from app.schemas.user import UserCreate, UserOut
@@ -10,12 +10,17 @@ from app.schemas.auth import SendOTP, VerifyOTP, Token
 from app.core.security import hash_password, verify_password, create_access_token
 from app.services.email_service import send_email
 from app.services.otp_service import create_otp,verify_otp
+# from fastapi import APIRouter, Depends, HTTPException, 
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-# 🔹 Signup
+
 @router.post("/signup", response_model=UserOut)
-def signup(user: UserCreate, db: Session = Depends(get_db)):
+def signup(
+    user: UserCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
     db_user = db.query(User).filter(User.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -26,13 +31,17 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
         email=user.email,
         phone=user.phone,
         hashed_password=hashed,
-        role=RoleEnum.MEMBER,  # ✅ lowercase
+        role=RoleEnum.MEMBER,
         is_active=True,
         is_approved=False
     )
+
     db.add(new_user)
     db.commit()
-    # db.refresh(new_user)  # always refresh after commit
+
+    # ✅ Non-blocking email sending
+    background_tasks.add_task(send_welcome_email, new_user.email, new_user.name)
+
     return new_user
 
 # 🔹 Send OTP
