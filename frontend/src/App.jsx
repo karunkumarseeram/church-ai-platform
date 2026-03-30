@@ -11,7 +11,7 @@ import Donations from "./pages/Donations";
 import Live from "./pages/Live";
 import Services from "./pages/Services";
 import ServiceDetails from "./pages/ServiceDetails";
-
+import AddEvent from "./pages/AddEvent";
 import Layout from "./components/Layout";
 
 // 🔐 Private Route with optional role restriction
@@ -78,13 +78,22 @@ function App() {
           />
 
           <Route
-            path="/events"
-            element={
-              <PrivateRoute>
-                <Layout><Events /></Layout>
-              </PrivateRoute>
-            }
-          />
+              path="/events"
+              element={
+                <PrivateRoute>
+                  <Layout><Events /></Layout>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/add-event"
+              element={
+                <PrivateRoute allowedRoles={["ADMIN", "PASTOR"]}>
+                  <Layout><AddEvent /></Layout>
+                </PrivateRoute>
+              }
+            />
 
           <Route
             path="/donations"

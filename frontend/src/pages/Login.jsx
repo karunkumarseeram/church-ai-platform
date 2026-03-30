@@ -197,18 +197,34 @@ export default function Login() {
 
 const styles = {
   container: {
-    display: "flex",
-    height: "100vh",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "linear-gradient(135deg, #6A1B9A, #87CEEB)",
+  display: "flex",
+  height: "100vh",
+  justifyContent: "center",
+  alignItems: "center",
+  position: "relative",
+  background: "linear-gradient(135deg, rgba(106,27,154,0.2), rgba(135,206,235,0.2)), url('/bg-login.png') no-repeat center center / cover"
+},
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(138, 43, 226, 0.3)", // lavender overlay with low opacity
+    zIndex: 1,
   },
   card: {
-    padding: 30,
-    width: 340,
+    position: "relative",
+    zIndex: 2,
+    padding: 40,
+    width: 360,
     textAlign: "center",
-    background: "#fff",
+    background: "rgba(255,255,255,0.95)", // slightly transparent card
     borderRadius: 15,
+    boxShadow: "0 8px 20px rgba(0,0,0,0.1)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
   },
   logo: {
     width: 100,
@@ -216,26 +232,32 @@ const styles = {
   },
   title: {
     color: "#6A1B9A",
+    fontSize: 28,
+    marginBottom: 5,
   },
   subtitle: {
     fontSize: 14,
-    marginBottom: 10,
+    marginBottom: 20,
   },
   input: {
     width: "100%",
-    padding: 10,
+    padding: 12,
     margin: "10px 0",
     borderRadius: 8,
     border: "1px solid #ccc",
+    fontSize: 16,
+    boxSizing: "border-box", // ensures padding does not break width
   },
   button: {
     width: "100%",
-    padding: 12,
+    padding: 14,
     background: "#6A1B9A",
     color: "#fff",
     border: "none",
     borderRadius: 8,
     cursor: "pointer",
+    fontSize: 16,
+    marginTop: 10,
   },
   otpContainer: {
     display: "flex",
@@ -243,8 +265,8 @@ const styles = {
     margin: "20px 0",
   },
   otpInput: {
-    width: 40,
-    height: 45,
+    width: 45,
+    height: 50,
     textAlign: "center",
     fontSize: 18,
     borderRadius: 8,
@@ -254,12 +276,18 @@ const styles = {
     color: "#6A1B9A",
     cursor: "pointer",
     marginTop: 10,
+    fontSize: 14,
   },
   links: {
     marginTop: 20,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 5,
   },
   error: {
     color: "red",
     fontSize: 13,
+    marginBottom: 10,
   },
 };

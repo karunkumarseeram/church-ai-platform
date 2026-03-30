@@ -16,3 +16,5 @@ razorpay
 jwt
 passlib
 pydantic[email]
+websockets
+"uvicorn[standard]" websockets
