@@ -197,13 +197,17 @@ export default function Login() {
 
 const styles = {
   container: {
-  display: "flex",
-  height: "100vh",
-  justifyContent: "center",
-  alignItems: "center",
-  position: "relative",
-  background: "linear-gradient(135deg, rgba(106,27,154,0.2), rgba(135,206,235,0.2)), url('/bg-login.png') no-repeat center center / cover"
-},
+    display: "flex",
+    height: "100vh",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundImage: `
+      linear-gradient(135deg, rgba(106,27,154,0.7), rgba(135,206,235,0.7)), 
+      url('/bg-login.png')`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+  },
   overlay: {
     position: "absolute",
     top: 0,
@@ -261,7 +265,8 @@ const styles = {
   },
   otpContainer: {
     display: "flex",
-    justifyContent: "space-between",
+    justifyContent: "center",
+    gap:10,
     margin: "20px 0",
   },
   otpInput: {
@@ -271,6 +276,7 @@ const styles = {
     fontSize: 18,
     borderRadius: 8,
     border: "1px solid #ccc",
+    boxSizing: "border-box",
   },
   link: {
     color: "#6A1B9A",
