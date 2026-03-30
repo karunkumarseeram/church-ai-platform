@@ -10,6 +10,18 @@ export default function AdminDashboardHeader({ userRole }) {
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
+  // 🔥 Dynamic title function
+  const getTitle = () => {
+    switch (userRole) {
+      case "ADMIN":
+        return "Admin Dashboard";
+      case "PASTOR":
+        return "Pastor Dashboard";
+      default:
+        return "Member Dashboard";
+    }
+  };
+
   // Fetch pending users
   const loadPending = async () => {
     if (!token || userRole !== "ADMIN") return;
@@ -17,7 +29,6 @@ export default function AdminDashboardHeader({ userRole }) {
       const res = await API.get("/admin/pending", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      // Adjust if API returns data as { members: [...] }
       setPendingUsers(res.data || []);
     } catch (err) {
       console.error("Failed to load pending users:", err);
@@ -25,26 +36,26 @@ export default function AdminDashboardHeader({ userRole }) {
   };
 
   useEffect(() => {
-  if (!token || userRole !== "ADMIN") return;
+    if (!token || userRole !== "ADMIN") return;
 
-  loadPending(); 
-  const interval = setInterval(loadPending, 900000); // poll every 15 minutes
-  return () => clearInterval(interval);
-}, [token, userRole]);
+    loadPending();
+    const interval = setInterval(loadPending, 900000); // 15 min
+    return () => clearInterval(interval);
+  }, [token, userRole]);
 
-  // Approve / Revoke action
+  // Approve / Revoke
   const handleAction = async (userId, action) => {
     try {
       await API.put(`/admin/members/${userId}/${action}`, null, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      loadPending(); // Refresh list
+      loadPending();
     } catch (err) {
       console.error(`Failed to ${action} user:`, err);
     }
   };
 
-  // Close dropdown when clicking outside
+  // Close dropdown outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -57,7 +68,8 @@ export default function AdminDashboardHeader({ userRole }) {
 
   return (
     <div style={styles.header}>
-      <h2>Admin Dashboard</h2>
+      {/* 🔥 FIXED HERE */}
+      <h2>{getTitle()}</h2>
 
       {userRole === "ADMIN" && (
         <div ref={dropdownRef} style={styles.bellWrapper}>
@@ -75,7 +87,8 @@ export default function AdminDashboardHeader({ userRole }) {
             <div style={styles.dropdown}>
               {pendingUsers.slice(0, 5).map((user) => {
                 const isRecent =
-                  new Date() - new Date(user.created_at) < 1000 * 60 * 60; // 1 hour
+                  new Date() - new Date(user.created_at) < 1000 * 60 * 60;
+
                 return (
                   <div
                     key={user.id}
@@ -90,14 +103,12 @@ export default function AdminDashboardHeader({ userRole }) {
                       <button
                         style={styles.approveBtn}
                         onClick={() => handleAction(user.id, "approve")}
-                        title="Approve user"
                       >
                         ✅
                       </button>
                       <button
                         style={styles.revokeBtn}
                         onClick={() => handleAction(user.id, "revoke")}
-                        title="Reject / Revoke user"
                       >
                         ❌
                       </button>
@@ -105,6 +116,7 @@ export default function AdminDashboardHeader({ userRole }) {
                   </div>
                 );
               })}
+
               {pendingUsers.length > 5 && (
                 <div
                   style={styles.viewMore}
