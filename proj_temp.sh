@@ -57,6 +57,8 @@ touch frontend/src/components/Layout.jsx
 touch frontend/src/components/Sidebar.jsx
 touch frontend/src/components/Navbar.jsx
 touch frontend/src/components/AuthLayout.jsx
+touch frontend/src/components/AdminDashboard.jsx
+
 
 touch frontend/src/pages/AdminLogin.jsx
 touch frontend/src/pages/AdminUser.jsx
