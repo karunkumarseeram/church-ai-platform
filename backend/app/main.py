@@ -24,6 +24,7 @@ app.include_router(auth.router)
 app.include_router(events.router)
 app.include_router(dashboard.router)
 app.include_router(admin.router)
+# app.include_router(ws.router)
 
 # 🔹 Initialize database on startup
 # @app.on_event("startup")

@@ -10,6 +10,8 @@ export default function AdminDashboardHeader({ userRole }) {
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
+  const [notifications, setNotifications] = useState([]); // 🔔 Event notifications
+
   // 🔥 Dynamic title function
   const getTitle = () => {
     switch (userRole) {
@@ -22,7 +24,31 @@ export default function AdminDashboardHeader({ userRole }) {
     }
   };
 
-  // Fetch pending users
+  // ============================
+  // 🔔 WEBSOCKET FOR NEW EVENTS
+  // ============================
+  useEffect(() => {
+    if (!token) return;
+
+    // Pass token as query param for authentication
+    const ws = new WebSocket(`ws://localhost:8000/ws/events?token=${token}`);
+
+    ws.onopen = () => console.log("WebSocket connected ✅");
+    ws.onclose = () => console.log("WebSocket closed ❌");
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "NEW_EVENT") {
+        setNotifications((prev) => [data.event, ...prev]);
+      }
+    };
+
+    return () => ws.close();
+  }, [token]);
+
+  // ============================
+  // 🔔 PENDING USERS (ADMIN)
+  // ============================
   const loadPending = async () => {
     if (!token || userRole !== "ADMIN") return;
     try {
@@ -39,11 +65,11 @@ export default function AdminDashboardHeader({ userRole }) {
     if (!token || userRole !== "ADMIN") return;
 
     loadPending();
-    const interval = setInterval(loadPending, 900000); // 15 min
+    const interval = setInterval(loadPending, 900000); // refresh every 15 min
     return () => clearInterval(interval);
   }, [token, userRole]);
 
-  // Approve / Revoke
+  // Approve / Revoke user
   const handleAction = async (userId, action) => {
     try {
       await API.put(`/admin/members/${userId}/${action}`, null, {
@@ -55,7 +81,7 @@ export default function AdminDashboardHeader({ userRole }) {
     }
   };
 
-  // Close dropdown outside click
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -68,7 +94,6 @@ export default function AdminDashboardHeader({ userRole }) {
 
   return (
     <div style={styles.header}>
-      {/* 🔥 FIXED HERE */}
       <h2>{getTitle()}</h2>
 
       {userRole === "ADMIN" && (
@@ -78,16 +103,37 @@ export default function AdminDashboardHeader({ userRole }) {
             style={styles.bellIcon}
           >
             🔔
-            {pendingUsers.length > 0 && (
-              <span style={styles.badge}>{pendingUsers.length}</span>
+            {/* Badge showing total notifications */}
+            {(pendingUsers.length + notifications.length) > 0 && (
+              <span style={styles.badge}>
+                {pendingUsers.length + notifications.length}
+              </span>
             )}
           </div>
 
-          {showDropdown && pendingUsers.length > 0 && (
+          {showDropdown && (
             <div style={styles.dropdown}>
+              {/* ===================== */}
+              {/* 📢 EVENT NOTIFICATIONS */}
+              {/* ===================== */}
+              {notifications.length > 0 && (
+                <>
+                  <div style={styles.sectionTitle}>📢 New Events</div>
+                  {notifications.map((event, index) => (
+                    <div key={index} style={styles.notificationItem}>
+                      📅 {event.title} - {new Date(event.event_date).toLocaleString()}
+                    </div>
+                  ))}
+                  <hr />
+                </>
+              )}
+
+              {/* ===================== */}
+              {/* 👤 PENDING USERS */}
+              {/* ===================== */}
               {pendingUsers.slice(0, 5).map((user) => {
                 const isRecent =
-                  new Date() - new Date(user.created_at) < 1000 * 60 * 60;
+                  new Date() - new Date(user.created_at) < 1000 * 60 * 60; // 1 hour
 
                 return (
                   <div
@@ -176,6 +222,16 @@ const styles = {
     boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
     zIndex: 1000,
     padding: 10,
+  },
+  sectionTitle: {
+    fontWeight: "bold",
+    marginBottom: 5,
+    color: "#6A1B9A",
+  },
+  notificationItem: {
+    padding: "5px 0",
+    fontSize: 14,
+    color: "#333",
   },
   userRow: {
     display: "flex",

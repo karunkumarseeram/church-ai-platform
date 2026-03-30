@@ -1,66 +1,54 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.schemas.event import EventCreate, EventOut
-from app.models.chr_models import Event
-from app.core.dependencies import get_db, admin_required
+from app.models.chr_models import Event, RoleEnum
+from app.core.database import get_db
+from app.core.dependencies import admin_required
+# from app.services.websocket_manager import manager
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
 
-# CREATE (ADMIN ONLY)
-@router.post("/")
-def create_event(
+# CREATE EVENT (ADMIN / PASTOR)
+# POST /events/
+@router.post("/", response_model=EventOut)
+async def create_event(
     data: EventCreate,
     db: Session = Depends(get_db),
     user=Depends(admin_required)
 ):
-    event = Event(**data.dict())
+    event = Event(**data.dict(), created_by=user.id)
     db.add(event)
     db.commit()
+    db.refresh(event)
+
+    # 🔔 Notify all connected clients
+    await manager.broadcast({
+        "type": "NEW_EVENT",
+        "event": {
+            "id": str(event.id),
+            "title": event.title,
+            "event_date": str(event.event_date)
+        }
+    })
+
     return event
 
 
-# GET ALL + PAGINATION
+# GET EVENTS
 @router.get("/", response_model=list[EventOut])
-def get_events(
-    skip: int = 0,
-    limit: int = 10,
-    db: Session = Depends(get_db)
-):
-    return db.query(Event).offset(skip).limit(limit).all()
+def get_events(db: Session = Depends(get_db)):
+    return db.query(Event).order_by(Event.event_date.asc()).all()
 
 
-# GET BY ID
-@router.get("/{id}", response_model=EventOut)
-def get_event(id: str, db: Session = Depends(get_db)):
-    return db.query(Event).filter(Event.id == id).first()
-
-
-# UPDATE (ADMIN)
-@router.put("/{id}")
-def update_event(
-    id: str,
-    data: EventCreate,
-    db: Session = Depends(get_db),
-    user=Depends(admin_required)
-):
-    event = db.query(Event).filter(Event.id == id).first()
-
-    for key, value in data.dict().items():
-        setattr(event, key, value)
-
-    db.commit()
-    return event
-
-
-# DELETE (ADMIN)
+# DELETE
 @router.delete("/{id}")
-def delete_event(
-    id: str,
-    db: Session = Depends(get_db),
-    user=Depends(admin_required)
-):
+def delete_event(id: str, db: Session = Depends(get_db), user=Depends(admin_required)):
     event = db.query(Event).filter(Event.id == id).first()
+    if not event:
+        raise HTTPException(status_code=404)
+
     db.delete(event)
     db.commit()
+
     return {"msg": "Deleted"}
