@@ -63,7 +63,7 @@ export default function AdminDashboardHeader({ userRole }) {
         <div ref={dropdownRef} style={styles.bellWrapper}>
           <div
             onClick={() => setShowDropdown((prev) => !prev)}
-            style={styles.bellIcon}
+            style={styles.bellIcon} 
           >
             🔔
             {pendingUsers.length > 0 && (
