@@ -10,14 +10,22 @@ export default function AdminDashboardHeader({ userRole }) {
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
-  // Fetch pending users (only for admin)
+  // Load pending users (first time admin login)
   const loadPending = async () => {
     if (!token || userRole !== "ADMIN") return;
     try {
       const res = await API.get("/admin/pending", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setPendingUsers(res.data.members || []);
+
+      // ⚠ Adjusted for API returning raw array
+      if (Array.isArray(res.data)) {
+        setPendingUsers(res.data);
+      } else if (res.data.members) {
+        setPendingUsers(res.data.members);
+      } else {
+        setPendingUsers([]);
+      }
     } catch (err) {
       console.error("Failed to load pending users:", err);
       setPendingUsers([]);
@@ -27,8 +35,6 @@ export default function AdminDashboardHeader({ userRole }) {
   useEffect(() => {
     if (!token || userRole !== "ADMIN") return;
     loadPending();
-    const interval = setInterval(loadPending, 900000); // every 15 mins
-    return () => clearInterval(interval);
   }, [token, userRole]);
 
   const handleAction = async (userId, action) => {
@@ -36,12 +42,13 @@ export default function AdminDashboardHeader({ userRole }) {
       await API.put(`/admin/members/${userId}/${action}`, null, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      loadPending();
+      loadPending(); // refresh after action
     } catch (err) {
       console.error(`Failed to ${action} user:`, err);
     }
   };
 
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -52,18 +59,23 @@ export default function AdminDashboardHeader({ userRole }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Dynamic title based on role
-  const dashboardTitle = userRole === "ADMIN" || userRole === "PASTOR" ? "Admin Dashboard" : "Member Dashboard";
+  const dashboardTitle =
+    userRole === "ADMIN" || userRole === "PASTOR"
+      ? "Admin Dashboard"
+      : "Member Dashboard";
 
   return (
     <div style={styles.header}>
-      <h2 style={{ color: "#fff" }}>{dashboardTitle}</h2>
+      {/* Gradient thick title banner */}
+      <h2 style={styles.title}>{dashboardTitle}</h2>
 
+      {/* Notification bell for admin */}
       {userRole === "ADMIN" && (
         <div ref={dropdownRef} style={styles.bellWrapper}>
           <div
             onClick={() => setShowDropdown((prev) => !prev)}
-            style={styles.bellIcon} 
+            style={styles.bellIcon}
+            title="Pending Approvals"
           >
             🔔
             {pendingUsers.length > 0 && (
@@ -71,40 +83,35 @@ export default function AdminDashboardHeader({ userRole }) {
             )}
           </div>
 
+          {/* Dropdown panel */}
           {showDropdown && pendingUsers.length > 0 && (
             <div style={styles.dropdown}>
-              {pendingUsers.slice(0, 5).map((user) => {
-                const isRecent =
-                  new Date() - new Date(user.created_at) < 1000 * 60 * 60; // 1 hr
-                return (
-                  <div
-                    key={user.id}
-                    style={{
-                      ...styles.userRow,
-                      ...(isRecent ? styles.recent : {}),
-                    }}
-                    title={user.email}
-                  >
-                    <span>{user.name}</span>
-                    <div>
-                      <button
-                        style={styles.approveBtn}
-                        onClick={() => handleAction(user.id, "approve")}
-                        title="Approve user"
-                      >
-                        ✅
-                      </button>
-                      <button
-                        style={styles.revokeBtn}
-                        onClick={() => handleAction(user.id, "revoke")}
-                        title="Reject / Revoke user"
-                      >
-                        ❌
-                      </button>
-                    </div>
+              {pendingUsers.slice(0, 5).map((user) => (
+                <div
+                  key={user.id}
+                  style={styles.userRow}
+                  title={user.email}
+                >
+                  <span>{user.name}</span>
+                  <div>
+                    <button
+                      style={styles.approveBtn}
+                      onClick={() => handleAction(user.id, "approve")}
+                      title="Approve user"
+                    >
+                      ✅
+                    </button>
+                    <button
+                      style={styles.revokeBtn}
+                      onClick={() => handleAction(user.id, "revoke")}
+                      title="Reject user"
+                    >
+                      ❌
+                    </button>
                   </div>
-                );
-              })}
+                </div>
+              ))}
+
               {pendingUsers.length > 5 && (
                 <div
                   style={styles.viewMore}
@@ -126,43 +133,60 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "15px 30px",
-    background: "#6A1B9A",
+    padding: "20px 30px",
+    background: "linear-gradient(90deg, #E6E6FA, #B3C6FF, #6A5ACD)",
+    borderRadius: 10,
     color: "#fff",
+    fontFamily: "'Cinzel', serif",
+    boxShadow: "0 8px 25px rgba(0,0,0,0.15)",
+  },
+
+  title: {
+    fontSize: "2rem",
+    fontWeight: 700,
+    textShadow: "0 0 12px rgba(0,0,0,0.3)",
+  },
+
+  bellWrapper: {
     position: "relative",
   },
-  bellWrapper: { position: "relative" },
+
   bellIcon: {
     cursor: "pointer",
-    fontSize: 24,
+    fontSize: 28,
+    color: "#fff",
     position: "relative",
     userSelect: "none",
+    textShadow: "0 0 6px rgba(255,255,255,0.8)",
   },
+
   badge: {
     position: "absolute",
-    top: -5,
+    top: -6,
     right: -10,
     background: "red",
     borderRadius: "50%",
-    padding: "2px 6px",
+    padding: "3px 7px",
     fontSize: 12,
     fontWeight: "bold",
     color: "#fff",
   },
+
   dropdown: {
     position: "absolute",
-    top: 35,
+    top: 40,
     right: 0,
-    width: 300,
+    width: 320,
     maxHeight: 300,
     overflowY: "auto",
     background: "#fff",
     color: "#000",
-    borderRadius: 8,
-    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+    borderRadius: 10,
+    boxShadow: "0 6px 20px rgba(0,0,0,0.25)",
     zIndex: 1000,
     padding: 10,
   },
+
   userRow: {
     display: "flex",
     justifyContent: "space-between",
@@ -170,7 +194,7 @@ const styles = {
     padding: "8px 5px",
     borderBottom: "1px solid #eee",
   },
-  recent: { background: "#F0E6FF" },
+
   approveBtn: {
     marginRight: 5,
     background: "green",
@@ -180,6 +204,7 @@ const styles = {
     cursor: "pointer",
     padding: "2px 6px",
   },
+
   revokeBtn: {
     background: "red",
     color: "#fff",
@@ -188,10 +213,11 @@ const styles = {
     cursor: "pointer",
     padding: "2px 6px",
   },
+
   viewMore: {
     textAlign: "center",
     marginTop: 5,
-    color: "#fff",
+    color: "#6A5ACD",
     fontWeight: "bold",
     cursor: "pointer",
   },
