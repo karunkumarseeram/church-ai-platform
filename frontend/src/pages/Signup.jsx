@@ -42,13 +42,13 @@ export default function Signup() {
       });
 
       setError("");
-      setSuccess("Signup successful! Welcome email sent. Waiting for you to see...");
+      setSuccess(
+        "Signup successful! Welcome email sent. Waiting for you to see..."
+      );
 
-      // ⏳ Redirect after 12 seconds
       setTimeout(() => {
         navigate("/");
       }, 12000);
-
     } catch (err) {
       setError(err.response?.data?.detail || "Signup failed");
     }
@@ -59,35 +59,38 @@ export default function Signup() {
       <div style={styles.card}>
         <img
           src="/fft_logo.png"
-          width={60}
           alt="FFT Church Logo"
-          style={styles.fft_logo}
+          style={styles.logo}
         />
+
         <h2 style={styles.title}>FFT Church Signup</h2>
-        <p style={{ fontSize: 13 }}>HIM We Proclaim</p>
+        <p style={styles.subtitle}>HIM We Proclaim</p>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        {success && <p style={{ color: "green" }}>{success}</p>}
+        {error && <p style={styles.error}>{error}</p>}
+        {success && <p style={styles.success}>{success}</p>}
 
-        <>
+        <div style={styles.form}>
           <input
             style={styles.input}
             placeholder="Name"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
+
           <input
             style={styles.input}
             placeholder="Email"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
           />
+
           <input
             style={styles.input}
             placeholder="Phone"
             value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
           />
+
           <input
             style={styles.input}
             type="password"
@@ -95,6 +98,7 @@ export default function Signup() {
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
           />
+
           <input
             style={styles.input}
             type="password"
@@ -106,7 +110,7 @@ export default function Signup() {
           <button style={styles.button} onClick={handleSignup}>
             Signup
           </button>
-        </>
+        </div>
 
         <p style={styles.link} onClick={() => navigate("/")}>
           Already have an account? Login
@@ -129,16 +133,82 @@ const styles = {
     backgroundSize: "cover",
     backgroundPosition: "center",
   },
+
+  // 🔥 No box, only glass effect
   card: {
     padding: 30,
-    width: 320,
+    width: 340,
     textAlign: "center",
-    borderRadius: 12,
-    boxShadow: "0 6px 20px rgba(0,0,0,0.15)",
+    background: "transparent",
+    backdropFilter: "blur(8px)",
   },
-  fft_logo: { width: 120, height: 120, marginBottom: 0, objectFit: "contain" },
-  title: { marginBottom: 0, color: "#6A1B9A", fontSize: 22, fontWeight: "bold" },
-  input: { width: "100%", padding: 12, margin: "10px 0", border: "1px solid #ccc", borderRadius: 8 },
-  button: { width: "100%", padding: 12, marginTop: 15, background: "#6A1B9A", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" },
-  link: { color: "#6A1B9A", cursor: "pointer", margin: 5, fontSize: 14 },
+
+  logo: {
+    width: 90,
+    height: 90,
+    objectFit: "contain",
+    marginBottom: 10,
+  },
+
+  title: {
+    marginBottom: 5,
+    color: "#6A1B9A",
+    fontSize: 22,
+    fontWeight: "bold",
+  },
+
+  subtitle: {
+    fontSize: 13,
+    marginBottom: 15,
+    color: "#333",
+  },
+
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+  },
+
+  // 🔥 Transparent styled inputs
+  input: {
+    width: "100%",
+    padding: 12,
+    border: "1px solid rgba(255,255,255,0.6)",
+    borderRadius: 8,
+    fontSize: 14,
+    boxSizing: "border-box",
+    background: "rgba(255,255,255,0.2)",
+    outline: "none",
+  },
+
+  button: {
+    width: "100%",
+    padding: 12,
+    marginTop: 10,
+    background: "#6A1B9A",
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
+    cursor: "pointer",
+    fontWeight: "bold",
+  },
+
+  link: {
+    marginTop: 15,
+    color: "#6A1B9A",
+    cursor: "pointer",
+    fontSize: 14,
+  },
+
+  error: {
+    color: "red",
+    fontSize: 13,
+    marginBottom: 10,
+  },
+
+  success: {
+    color: "green",
+    fontSize: 13,
+    marginBottom: 10,
+  },
 };
