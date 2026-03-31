@@ -1,78 +1,168 @@
-import { useState, useContext } from "react";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import { useState, useEffect } from "react";
 import API from "../services/api";
-import { AuthContext } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function AddEvent() {
-  const { role } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    location: "",
-    event_date: null,
-  });
+  // If editing, event data comes from navigate state
+  const existingEvent = location.state?.event;
 
-  const [error, setError] = useState("");
+  const [event, setEvent] = useState({
+  title: "",
+  description: "",
+  location: "",
+  event_date: "",
+});
 
-  if (role !== "ADMIN" && role !== "PASTOR") {
-    return <h2>Unauthorized</h2>;
-  }
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (existingEvent) {
+      setEvent(existingEvent);
+    }
+  }, [existingEvent]);
 
   const handleSubmit = async () => {
-    if (!form.title || !form.event_date) {
-      setError("Title & Date required");
-      return;
-    }
-
     try {
-      await API.post("/events", form);
-      navigate("/dashboard");
-    } catch {
-      setError("Failed to create event");
+      if (!event.title || !event.date || !event.time) {
+        setMessage("Please fill all required fields");
+        return;
+      }
+
+      if (existingEvent) {
+        // 🔁 Update
+        await API.put(`/events/${existingEvent.id}`, event);
+        setMessage("Event updated successfully!");
+      } else {
+        // ➕ Create
+        await API.post("/events", event);
+        setMessage("Event created successfully!");
+      }
+
+      setTimeout(() => navigate("/dashboard"), 1500);
+    } catch (err) {
+      setMessage(err.response?.data?.detail || "Error saving event");
     }
   };
 
   return (
-    <div style={{ padding: 40 }}>
-      <h2>Add Event</h2>
+    <div style={styles.container}>
+      <div style={styles.card}>
+        <h2>{existingEvent ? "Update Event" : "Add Event"}</h2>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+        {message && <p style={styles.message}>{message}</p>}
 
-      <input
-        placeholder="Title"
-        onChange={(e) => setForm({ ...form, title: e.target.value })}
-      />
+        <div style={styles.form}>
+          <input
+            style={styles.input}
+            placeholder="Event Title"
+            value={event.title}
+            onChange={(e) =>
+              setEvent({ ...event, title: e.target.value })
+            }
+          />
 
-      <input
-        placeholder="Location"
-        onChange={(e) => setForm({ ...form, location: e.target.value })}
-      />
+          <input
+            type="datetime-local"
+            value={event.event_date}
+            onChange={(e) =>
+              setEvent({ ...event, event_date: e.target.value })
+            }
+          />
 
-      <textarea
-        placeholder="Description"
-        onChange={(e) => setForm({ ...form, description: e.target.value })}
-      />
+          <input
+            style={styles.input}
+            type="time"
+            value={event.time}
+            onChange={(e) =>
+              setEvent({ ...event, time: e.target.value })
+            }
+          />
 
-      <DatePicker
-        selected={form.event_date}
-        onChange={(date) => setForm({ ...form, event_date: date })}
-        showTimeSelect
-        dateFormat="Pp"
-      />
+          <textarea
+            style={styles.textarea}
+            placeholder="Description"
+            value={event.description}
+            onChange={(e) =>
+              setEvent({ ...event, description: e.target.value })
+            }
+          />
 
-      <button onClick={handleSubmit}>Create</button>
+          <button style={styles.button} onClick={handleSubmit}>
+            {existingEvent ? "Update Event" : "Create Event"}
+          </button>
+
+          <button
+            style={styles.cancel}
+            onClick={() => navigate("/dashboard")}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
 const styles = {
-  container: { display: "flex", justifyContent: "center", marginTop: 50 },
-  card: { padding: 30, background: "#fff", borderRadius: 10, width: 350 },
-  input: { width: "100%", padding: 10, margin: "10px 0" },
-  button: { padding: 10, background: "#6A1B9A", color: "#fff", border: "none" },
-  error: { color: "red" },
+  container: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100vh",
+    background: "linear-gradient(135deg, #E6E6FA, #ADD8E6)",
+  },
+
+  card: {
+    width: 400,
+    padding: 30,
+    borderRadius: 12,
+    background: "#fff",
+    boxShadow: "0 6px 20px rgba(0,0,0,0.15)",
+    textAlign: "center",
+  },
+
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+    marginTop: 15,
+  },
+
+  input: {
+    padding: 10,
+    borderRadius: 8,
+    border: "1px solid #ccc",
+  },
+
+  textarea: {
+    padding: 10,
+    borderRadius: 8,
+    border: "1px solid #ccc",
+    minHeight: 80,
+  },
+
+  button: {
+    padding: 12,
+    background: "#6A1B9A",
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
+    cursor: "pointer",
+  },
+
+  cancel: {
+    padding: 10,
+    background: "#ccc",
+    border: "none",
+    borderRadius: 8,
+    cursor: "pointer",
+  },
+
+  message: {
+    marginTop: 10,
+    color: "green",
+  },
 };

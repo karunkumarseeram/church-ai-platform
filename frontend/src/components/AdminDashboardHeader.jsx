@@ -10,66 +10,27 @@ export default function AdminDashboardHeader({ userRole }) {
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
-  const [notifications, setNotifications] = useState([]); // 🔔 Event notifications
-
-  // 🔥 Dynamic title function
-  const getTitle = () => {
-    switch (userRole) {
-      case "ADMIN":
-        return "Admin Dashboard";
-      case "PASTOR":
-        return "Pastor Dashboard";
-      default:
-        return "Member Dashboard";
-    }
-  };
-
-  // ============================
-  // 🔔 WEBSOCKET FOR NEW EVENTS
-  // ============================
-  useEffect(() => {
-    if (!token) return;
-
-    // Pass token as query param for authentication
-    const ws = new WebSocket(`ws://localhost:8000/ws/events?token=${token}`);
-
-    ws.onopen = () => console.log("WebSocket connected ✅");
-    ws.onclose = () => console.log("WebSocket closed ❌");
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "NEW_EVENT") {
-        setNotifications((prev) => [data.event, ...prev]);
-      }
-    };
-
-    return () => ws.close();
-  }, [token]);
-
-  // ============================
-  // 🔔 PENDING USERS (ADMIN)
-  // ============================
+  // Fetch pending users (only for admin)
   const loadPending = async () => {
     if (!token || userRole !== "ADMIN") return;
     try {
       const res = await API.get("/admin/pending", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setPendingUsers(res.data || []);
+      setPendingUsers(res.data.members || []);
     } catch (err) {
       console.error("Failed to load pending users:", err);
+      setPendingUsers([]);
     }
   };
 
   useEffect(() => {
     if (!token || userRole !== "ADMIN") return;
-
     loadPending();
-    const interval = setInterval(loadPending, 900000); // refresh every 15 min
+    const interval = setInterval(loadPending, 900000); // every 15 mins
     return () => clearInterval(interval);
   }, [token, userRole]);
 
-  // Approve / Revoke user
   const handleAction = async (userId, action) => {
     try {
       await API.put(`/admin/members/${userId}/${action}`, null, {
@@ -81,7 +42,6 @@ export default function AdminDashboardHeader({ userRole }) {
     }
   };
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -92,49 +52,30 @@ export default function AdminDashboardHeader({ userRole }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Dynamic title based on role
+  const dashboardTitle = userRole === "ADMIN" || userRole === "PASTOR" ? "Admin Dashboard" : "Member Dashboard";
+
   return (
     <div style={styles.header}>
-      <h2>{getTitle()}</h2>
+      <h2 style={{ color: "#fff" }}>{dashboardTitle}</h2>
 
       {userRole === "ADMIN" && (
         <div ref={dropdownRef} style={styles.bellWrapper}>
           <div
             onClick={() => setShowDropdown((prev) => !prev)}
-            style={styles.bellIcon}
+            style={styles.bellIcon} 
           >
             🔔
-            {/* Badge showing total notifications */}
-            {(pendingUsers.length + notifications.length) > 0 && (
-              <span style={styles.badge}>
-                {pendingUsers.length + notifications.length}
-              </span>
+            {pendingUsers.length > 0 && (
+              <span style={styles.badge}>{pendingUsers.length}</span>
             )}
           </div>
 
-          {showDropdown && (
+          {showDropdown && pendingUsers.length > 0 && (
             <div style={styles.dropdown}>
-              {/* ===================== */}
-              {/* 📢 EVENT NOTIFICATIONS */}
-              {/* ===================== */}
-              {notifications.length > 0 && (
-                <>
-                  <div style={styles.sectionTitle}>📢 New Events</div>
-                  {notifications.map((event, index) => (
-                    <div key={index} style={styles.notificationItem}>
-                      📅 {event.title} - {new Date(event.event_date).toLocaleString()}
-                    </div>
-                  ))}
-                  <hr />
-                </>
-              )}
-
-              {/* ===================== */}
-              {/* 👤 PENDING USERS */}
-              {/* ===================== */}
               {pendingUsers.slice(0, 5).map((user) => {
                 const isRecent =
-                  new Date() - new Date(user.created_at) < 1000 * 60 * 60; // 1 hour
-
+                  new Date() - new Date(user.created_at) < 1000 * 60 * 60; // 1 hr
                 return (
                   <div
                     key={user.id}
@@ -149,12 +90,14 @@ export default function AdminDashboardHeader({ userRole }) {
                       <button
                         style={styles.approveBtn}
                         onClick={() => handleAction(user.id, "approve")}
+                        title="Approve user"
                       >
                         ✅
                       </button>
                       <button
                         style={styles.revokeBtn}
                         onClick={() => handleAction(user.id, "revoke")}
+                        title="Reject / Revoke user"
                       >
                         ❌
                       </button>
@@ -162,7 +105,6 @@ export default function AdminDashboardHeader({ userRole }) {
                   </div>
                 );
               })}
-
               {pendingUsers.length > 5 && (
                 <div
                   style={styles.viewMore}
@@ -189,9 +131,7 @@ const styles = {
     color: "#fff",
     position: "relative",
   },
-  bellWrapper: {
-    position: "relative",
-  },
+  bellWrapper: { position: "relative" },
   bellIcon: {
     cursor: "pointer",
     fontSize: 24,
@@ -223,16 +163,6 @@ const styles = {
     zIndex: 1000,
     padding: 10,
   },
-  sectionTitle: {
-    fontWeight: "bold",
-    marginBottom: 5,
-    color: "#6A1B9A",
-  },
-  notificationItem: {
-    padding: "5px 0",
-    fontSize: 14,
-    color: "#333",
-  },
   userRow: {
     display: "flex",
     justifyContent: "space-between",
@@ -240,9 +170,7 @@ const styles = {
     padding: "8px 5px",
     borderBottom: "1px solid #eee",
   },
-  recent: {
-    background: "#F0E6FF",
-  },
+  recent: { background: "#F0E6FF" },
   approveBtn: {
     marginRight: 5,
     background: "green",
@@ -263,7 +191,7 @@ const styles = {
   viewMore: {
     textAlign: "center",
     marginTop: 5,
-    color: "#6A1B9A",
+    color: "#fff",
     fontWeight: "bold",
     cursor: "pointer",
   },
