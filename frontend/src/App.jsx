@@ -13,8 +13,7 @@ import Services from "./pages/Services";
 import ServiceDetails from "./pages/ServiceDetails";
 import AddEvent from "./pages/AddEvent";
 import Layout from "./components/Layout";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
+import Prayers from "./pages/Prayers";
 
 // 🔐 Private Route with optional role restriction
 function PrivateRoute({ children, allowedRoles = [] }) {
@@ -49,9 +48,6 @@ function App() {
           <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
           <Route path="/services" element={<Services />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/forgot" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* 🔐 Protected Routes */}
           <Route
@@ -108,7 +104,14 @@ function App() {
               </PrivateRoute>
             }
           />
-
+          <Route
+            path="/prayers"
+            element={
+              <PrivateRoute>
+                <Layout><Prayers /></Layout>
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/live"
             element={

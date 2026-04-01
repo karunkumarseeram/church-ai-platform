@@ -7,12 +7,13 @@ import PeopleIcon from "@mui/icons-material/People";
 import EventIcon from "@mui/icons-material/Event";
 import VolunteerActivismIcon from "@mui/icons-material/VolunteerActivism";
 import LiveTvIcon from "@mui/icons-material/LiveTv";
-
+import SelfImprovementIcon from "@mui/icons-material/SelfImprovement";
 const menuItems = [
   { name: "Dashboard", path: "/dashboard", icon: <DashboardIcon /> },
   { name: "Members", path: "/members", icon: <PeopleIcon /> },
   { name: "Events", path: "/events", icon: <EventIcon /> },
   { name: "Donations", path: "/donations", icon: <VolunteerActivismIcon /> },
+  { name: "Prayer Requests", path: "/prayers", icon: <SelfImprovementIcon /> },
   { name: "Live", path: "/live", icon: <LiveTvIcon /> },
 ];
 
