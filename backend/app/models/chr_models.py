@@ -165,3 +165,11 @@ class OTP(Base, BaseModel):
 
     expires_at = Column(DateTime, nullable=False)
     is_used = Column(Boolean, default=False)
+
+# ================= PASSWORD RESET TOKEN =================
+class PasswordResetToken(Base, BaseModel):
+    __tablename__ = "password_reset_tokens"
+
+    email = Column(String, index=True, nullable=False)
+    token = Column(String, unique=True, index=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)

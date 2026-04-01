@@ -5,10 +5,12 @@ import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [step, setStep] = useState(1);
   const [error, setError] = useState("");
   const [timer, setTimer] = useState(0);
+  const [loginMode, setLoginMode] = useState("otp"); // otp | password
 
   const inputsRef = useRef([]);
   const { login } = useContext(AuthContext);
@@ -16,7 +18,8 @@ export default function Login() {
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  // 🔹 Send OTP
+  // ================= OTP FLOW =================
+
   const sendOtp = async () => {
     if (!emailRegex.test(email)) {
       setError("Please enter a valid email");
@@ -25,17 +28,14 @@ export default function Login() {
 
     try {
       await API.post("/auth/send-otp", { email });
-
       setStep(2);
       setError("");
       startTimer();
-
-    } catch (err) {
+    } catch {
       setError("Failed to send OTP");
     }
   };
 
-  // 🔹 Timer
   const startTimer = () => {
     setTimer(30);
     const interval = setInterval(() => {
@@ -49,7 +49,6 @@ export default function Login() {
     }, 1000);
   };
 
-  // 🔹 Resend OTP
   const resendOtp = async () => {
     if (timer > 0) return;
 
@@ -62,7 +61,6 @@ export default function Login() {
     }
   };
 
-  // 🔹 Handle OTP input
   const handleChange = (value, index) => {
     if (!/^\d*$/.test(value)) return;
 
@@ -70,20 +68,17 @@ export default function Login() {
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Move forward
     if (value && index < 5) {
       inputsRef.current[index + 1].focus();
     }
   };
 
-  // 🔹 Handle Backspace
   const handleKeyDown = (e, index) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       inputsRef.current[index - 1].focus();
     }
   };
 
-  // 🔹 Handle Paste
   const handlePaste = (e) => {
     const pasteData = e.clipboardData.getData("text").slice(0, 6);
     if (!/^\d+$/.test(pasteData)) return;
@@ -98,7 +93,6 @@ export default function Login() {
     });
   };
 
-  // 🔹 Verify OTP
   const verifyOtp = async () => {
     const finalOtp = otp.join("");
 
@@ -115,11 +109,33 @@ export default function Login() {
 
       login(res.data.access_token);
       navigate("/dashboard");
-
     } catch {
       setError("Invalid OTP");
     }
   };
+
+  // ================= PASSWORD LOGIN =================
+
+  const loginWithPassword = async () => {
+    if (!email || !password) {
+      setError("Email and password required");
+      return;
+    }
+
+    try {
+      const res = await API.post("/auth/login", {
+        email,
+        password,
+      });
+
+      login(res.data.access_token);
+      navigate("/dashboard");
+    } catch {
+      setError("Invalid email or password");
+    }
+  };
+
+  // ================= UI =================
 
   return (
     <div style={styles.container}>
@@ -130,24 +146,71 @@ export default function Login() {
 
         {error && <p style={styles.error}>{error}</p>}
 
+        {/* TOGGLE */}
+        <div style={styles.toggleContainer}>
+          <button
+            style={{
+              ...styles.toggleButton,
+              background: loginMode === "otp" ? "#6A1B9A" : "#ccc",
+            }}
+            onClick={() => {
+              setLoginMode("otp");
+              setStep(1);
+              setError("");
+            }}
+          >
+            OTP Login
+          </button>
+
+          <button
+            style={{
+              ...styles.toggleButton,
+              background: loginMode === "password" ? "#6A1B9A" : "#ccc",
+            }}
+            onClick={() => {
+              setLoginMode("password");
+              setStep(1);
+              setError("");
+            }}
+          >
+            Password Login
+          </button>
+        </div>
+
         {/* STEP 1 */}
-        {step === 1 && (
-          <>
-            <input
-              style={styles.input}
-              placeholder="Enter Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+{step === 1 && (
+  <>
+    <input
+      style={{ ...styles.input, textAlign: "left" }} // always left-aligned
+      placeholder="Enter Email"
+      value={email}
+      onChange={(e) => setEmail(e.target.value)}
+    />
 
-            <button style={styles.button} onClick={sendOtp}>
-              Send OTP
-            </button>
-          </>
-        )}
+    {loginMode === "password" && (
+      <input
+        style={{ ...styles.input, textAlign: "left" }}
+        type="password"
+        placeholder="Enter Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+    )}
 
-        {/* STEP 2 */}
-        {step === 2 && (
+    {loginMode === "otp" ? (
+      <button style={styles.button} onClick={sendOtp}>
+        Send OTP
+      </button>
+    ) : (
+      <button style={styles.button} onClick={loginWithPassword}>
+        Login
+      </button>
+    )}
+  </>
+)}
+
+        {/* STEP 2 (OTP) */}
+        {loginMode === "otp" && step === 2 && (
           <>
             <div style={styles.otpContainer} onPaste={handlePaste}>
               {otp.map((digit, index) => (
@@ -181,6 +244,7 @@ export default function Login() {
           </>
         )}
 
+        {/* LINKS */}
         <div style={styles.links}>
           <p style={styles.link} onClick={() => navigate("/signup")}>
             New Member? Signup
@@ -195,6 +259,10 @@ export default function Login() {
   );
 }
 
+// ================= STYLES =================
+
+// ================= STYLES =================
+
 const styles = {
   container: {
     display: "flex",
@@ -206,91 +274,91 @@ const styles = {
       url('/bg-login.png')`,
     backgroundSize: "cover",
     backgroundPosition: "center",
-    backgroundRepeat: "no-repeat",
-  },
-  overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    backgroundColor: "rgba(138, 43, 226, 0.3)", // lavender overlay with low opacity
-    zIndex: 1,
   },
   card: {
-    position: "relative",
-    zIndex: 2,
     padding: 40,
     width: 360,
     textAlign: "center",
-    background: "rgba(255,255,255,0.95)", // slightly transparent card
-    borderRadius: 15,
+    background: "rgba(255,255,255,0.95)",
+    borderRadius: 20, // smoother card corners
     boxShadow: "0 8px 20px rgba(0,0,0,0.1)",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
   },
-  logo: {
-    width: 100,
-    marginBottom: 10,
-  },
-  title: {
-    color: "#6A1B9A",
-    fontSize: 28,
-    marginBottom: 5,
-  },
-  subtitle: {
-    fontSize: 14,
-    marginBottom: 20,
-  },
+  logo: { width: 100, marginBottom: 10 },
+  title: { color: "#6A1B9A", fontSize: 28, marginBottom: 5 },
+  subtitle: { fontSize: 14, marginBottom: 20 },
+
   input: {
     width: "100%",
-    padding: 12,
+    padding: 14,
     margin: "10px 0",
-    borderRadius: 8,
+    borderRadius: 12, // rounded edges
     border: "1px solid #ccc",
     fontSize: 16,
-    boxSizing: "border-box", // ensures padding does not break width
+    boxSizing: "border-box",
+    textAlign: "left",
+    outline: "none",
+    transition: "0.2s",
   },
+
   button: {
     width: "100%",
     padding: 14,
     background: "#6A1B9A",
     color: "#fff",
     border: "none",
-    borderRadius: 8,
+    borderRadius: 12,
     cursor: "pointer",
     fontSize: 16,
     marginTop: 10,
+    transition: "0.2s",
   },
+
+  toggleContainer: {
+    display: "flex",
+    gap: 10,
+    marginBottom: 15,
+  },
+
+  toggleButton: {
+    flex: 1,
+    padding: 12,
+    border: "none",
+    borderRadius: 12,
+    cursor: "pointer",
+    color: "#fff",
+    fontSize: 14,
+    transition: "0.2s",
+  },
+
   otpContainer: {
     display: "flex",
+    gap: 10,
     justifyContent: "center",
-    gap:10,
     margin: "20px 0",
   },
+
   otpInput: {
-    width: 45,
+    width: 50,
     height: 50,
     textAlign: "center",
-    fontSize: 18,
-    borderRadius: 8,
+    fontSize: 20,
+    borderRadius: 12, // rounded OTP boxes
     border: "1px solid #ccc",
-    boxSizing: "border-box",
+    outline: "none",
+    transition: "0.2s",
   },
+
   link: {
     color: "#6A1B9A",
     cursor: "pointer",
-    marginTop: 10,
     fontSize: 14,
+    marginTop: 10,
   },
+
   links: {
     marginTop: 20,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 5,
   },
+
   error: {
     color: "red",
     fontSize: 13,
