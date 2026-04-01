@@ -3,7 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import uuid
-
+from fastapi import Request  # import Request to get client IP
+from datetime import datetime
 from app.schemas.auth import (
     SendOTP, VerifyOTP, Token, LoginRequest,
     ForgotPasswordRequest, ResetPasswordRequest
@@ -46,8 +47,11 @@ def signup(user: LoginRequest, background_tasks: BackgroundTasks, db: Session = 
 # -------------------------------
 # 🔹 Password login
 # -------------------------------
+
+
 @router.post("/login", response_model=Token)
-def login(data: LoginRequest, db: Session = Depends(get_db)):
+def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)):
+    # 1️⃣ Find user
     user = db.query(User).filter(User.email == data.email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -56,6 +60,13 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     if not user.is_approved:
         raise HTTPException(status_code=403, detail="User not approved")
 
+    # 2️⃣ Capture last login time and IP
+    user.last_login = datetime.utcnow()
+    # Use client host IP from request
+    user.last_login_ip = request.client.host
+    db.commit()
+
+    # 3️⃣ Generate token
     access_token = create_access_token({"user_id": str(user.id), "role": user.role.value})
     return {"access_token": access_token, "token_type": "bearer"}
 
