@@ -35,6 +35,8 @@ class UserOut(UserBase):
     is_active: bool
     is_approved: bool
     created_at: datetime
+    last_login: Optional[datetime] = None      # ✅ Added
+    last_login_ip: Optional[str] = None        # ✅ Added
 
     class Config:
         from_attributes = True
