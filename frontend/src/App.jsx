@@ -13,10 +13,13 @@ import Services from "./pages/Services";
 import ServiceDetails from "./pages/ServiceDetails";
 import AddEvent from "./pages/AddEvent";
 import Layout from "./components/Layout";
+import Prayers from "./pages/Prayers";
+
+// 🔐 NEW IMPORTS (IMPORTANT)
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 
-// 🔐 Private Route with optional role restriction
+// 🔐 Private Route
 function PrivateRoute({ children, allowedRoles = [] }) {
   const { token, userRole } = useContext(AuthContext);
 
@@ -49,9 +52,10 @@ function App() {
           <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
           <Route path="/services" element={<Services />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/forgot" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+
+          {/* 🔐 AUTH ROUTES ADDED */}
+          <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+          <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
 
           {/* 🔐 Protected Routes */}
           <Route
@@ -72,7 +76,6 @@ function App() {
             }
           />
 
-          {/* Admin-only Members Page */}
           <Route
             path="/members"
             element={
@@ -83,28 +86,37 @@ function App() {
           />
 
           <Route
-              path="/events"
-              element={
-                <PrivateRoute>
-                  <Layout><Events /></Layout>
-                </PrivateRoute>
-              }
-            />
+            path="/events"
+            element={
+              <PrivateRoute>
+                <Layout><Events /></Layout>
+              </PrivateRoute>
+            }
+          />
 
-            <Route
-              path="/add-event"
-              element={
-                <PrivateRoute allowedRoles={["ADMIN", "PASTOR"]}>
-                  <Layout><AddEvent /></Layout>
-                </PrivateRoute>
-              }
-            />
+          <Route
+            path="/add-event"
+            element={
+              <PrivateRoute allowedRoles={["ADMIN", "PASTOR"]}>
+                <Layout><AddEvent /></Layout>
+              </PrivateRoute>
+            }
+          />
 
           <Route
             path="/donations"
             element={
               <PrivateRoute>
                 <Layout><Donations /></Layout>
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/prayers"
+            element={
+              <PrivateRoute>
+                <Layout><Prayers /></Layout>
               </PrivateRoute>
             }
           />
@@ -118,7 +130,7 @@ function App() {
             }
           />
 
-          {/* 🔄 Catch-all route */}
+          {/* 🔄 Catch-all */}
           <Route path="*" element={<Navigate to="/" />} />
 
         </Routes>
