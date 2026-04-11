@@ -27,7 +27,6 @@ def create_prayer(
     db.refresh(prayer)
     return prayer
 
-
 # ✅ Get Approved Prayers (Public)
 @router.get("/", response_model=List[PrayerRequestOut])
 def get_prayers(db: Session = Depends(get_db)):
