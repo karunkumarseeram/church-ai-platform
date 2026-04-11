@@ -3,201 +3,182 @@ import API from "../services/api";
 import { AuthContext } from "../context/AuthContext";
 
 export default function Prayers() {
-  const { userRole } = useContext(AuthContext);
+  const { userRole, userId } = useContext(AuthContext);
 
   const [prayers, setPrayers] = useState([]);
   const [text, setText] = useState("");
   const [name, setName] = useState("");
+  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [loadingPage, setLoadingPage] = useState(true);
 
   const isAdmin = userRole === "ADMIN" || userRole === "PASTOR";
 
-  // ✅ DEFAULT COUNTRY PRAYERS
-  const defaultPrayers = [
-    { id: "d1", name: "Common Prayer", request: "Pray for peace and unity in our nation 🇮🇳" },
-    { id: "d2", name: "Common Prayer", request: "Pray for our leaders to have wisdom and integrity" },
-    { id: "d3", name: "Common Prayer", request: "Pray for jobs and financial stability for families" },
-    { id: "d4", name: "Common Prayer", request: "Pray for protection from disasters and crises" },
-    { id: "d5", name: "Scripture Prayer", request: "Heal our land and forgive our sins (2 Chronicles 7:14)" },
-    { id: "d6", name: "Scripture Prayer", request: "Let justice flow like a river (Amos 5:24)" },
+  const commonPrayers = [
+    { id: "c1", name: "Common Prayer", request: "Pray for peace 🇮🇳", is_approved: true },
+    { id: "c2", name: "Common Prayer", request: "Pray for church growth 🙏", is_approved: true },
+    { id: "c3", name: "Common Prayer", request: "Pray for families 👨‍👩‍👧‍👦", is_approved: true },
   ];
 
   const loadPrayers = async () => {
-    try {
-      setLoadingPage(true);
-      const url = isAdmin ? "/prayers/admin" : "/prayers";
-      const res = await API.get(url);
-      setPrayers(res.data);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to load prayers");
-    } finally {
-      setLoadingPage(false);
-    }
+    const url = isAdmin ? "/prayers/admin" : "/prayers";
+    const res = await API.get(url);
+    setPrayers([...commonPrayers, ...res.data]);
   };
 
   useEffect(() => {
     loadPrayers();
-  }, [isAdmin]);
+  }, []);
 
   const submitPrayer = async () => {
     if (!text.trim()) return alert("Write your prayer 🙏");
 
-    try {
-      setLoading(true);
-      await API.post("/prayers", { name, request: text });
-      setText("");
-      setName("");
-      loadPrayers();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to submit prayer");
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+
+    await API.post("/prayers", {
+      name,
+      request: text,
+    });
+
+    setName("");
+    setText("");
+    setLoading(false);
+    setOpen(false);
+    loadPrayers();
   };
 
+  // 🔥 APPROVE PRAYER
   const approvePrayer = async (id) => {
-    try {
-      await API.put(`/prayers/${id}/approve`);
-      loadPrayers();
-    } catch {
-      alert("Failed to approve");
-    }
+    await API.put(`/prayers/${id}/approve`);
+    loadPrayers();
   };
 
+  // 🔥 EDIT
+  const editPrayer = async (p) => {
+    const newName = prompt("Edit name:", p.name);
+    const newText = prompt("Edit prayer:", p.request);
+
+    if (!newText) return;
+
+    await API.put(`/prayers/${p.id}`, {
+      name: newName,
+      request: newText,
+    });
+
+    loadPrayers();
+  };
+
+  // 🔥 DELETE
   const deletePrayer = async (id) => {
     if (!window.confirm("Delete this prayer?")) return;
-    try {
-      await API.delete(`/prayers/${id}`);
-      loadPrayers();
-    } catch {
-      alert("Failed to delete");
-    }
+    await API.delete(`/prayers/${id}`);
+    loadPrayers();
   };
 
-  const isNew = (date) => {
-    if (!date) return false;
-    const d = new Date(date);
-    const now = new Date();
-    return (now - d) / (1000 * 60 * 60) < 24;
+  const canModify = (p) => {
+    if (p.id?.startsWith("c")) return false;
+    return isAdmin || p.user_id === userId;
   };
-
-  if (loadingPage) return <h2 style={{ padding: 30 }}>Loading prayers...</h2>;
-
-  // ✅ MERGE DEFAULT + API PRAYERS
-  const allPrayers = [...defaultPrayers, ...prayers];
 
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>🙏 Prayer Requests</h2>
 
-      {/* 🔥 FORM */}
-      <div style={styles.formWrapper}>
-        <div style={styles.formCard}>
-          <h3>Share Your Prayer</h3>
+      {/* OPEN FORM */}
+      <button style={styles.openBtn} onClick={() => setOpen(true)}>
+        + Raise Prayer Request
+      </button>
 
-          <input
-            placeholder="Your name (optional)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={styles.input}
-          />
+      {/* MODAL */}
+      {open && (
+        <div style={styles.overlay}>
+          <div style={styles.modal}>
+            <h3 style={styles.modalTitle}>Share Your Prayer</h3>
 
-          <textarea
-            placeholder="Write your prayer..."
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            style={styles.textarea}
-          />
+            <input
+              placeholder="Your Name (optional)"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              style={styles.input}
+            />
 
-          <button onClick={submitPrayer} style={styles.button} disabled={loading}>
-            {loading ? "Submitting..." : "Submit Prayer"}
-          </button>
+            <textarea
+              placeholder="Write your prayer..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              style={styles.textarea}
+            />
+
+            <div style={styles.btnRow}>
+              <button onClick={() => setOpen(false)} style={styles.cancelBtn}>
+                Cancel
+              </button>
+
+              <button onClick={submitPrayer} style={styles.saveBtn}>
+                {loading ? "Submitting..." : "Submit"}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* 🔥 PRAYER GRID */}
+      {/* PRAYER CARDS */}
       <div style={styles.grid}>
-        {allPrayers.map((p, idx) => {
-          const newPrayer = isNew(p.created_at);
+        {prayers.map((p, idx) => {
+          const approved = p.is_approved;
 
           return (
             <div
               key={p.id}
-              className="prayer-card"
               style={{
                 ...styles.card,
                 background: gradients[idx % gradients.length],
-                border: newPrayer ? "3px solid gold" : "none",
-                animation: newPrayer ? "glow 2s infinite" : "none",
+
+                // ⭐ APPROVED STYLE DIFFERENCE
+                border: approved ? "3px solid #00e676" : "none",
+                boxShadow: approved
+                  ? "0 0 15px rgba(0,255,100,0.5)"
+                  : "0 4px 10px rgba(0,0,0,0.2)",
+                opacity: approved ? 1 : 0.85,
               }}
             >
-              {newPrayer && <span style={styles.newBadge}>NEW</span>}
-              {isAdmin && p.id && !p.id.startsWith("d") && !p.is_approved && (
-                <span style={styles.pendingBadge}>Pending</span>
+              {/* ✅ APPROVED TICK */}
+              {approved && <div style={styles.tick}>✔ Approved</div>}
+
+              <h4>{p.name || "Anonymous"}</h4>
+              <p>{p.request}</p>
+
+              {/* ADMIN ACTIONS */}
+              {isAdmin && !approved && (
+                <button
+                  onClick={() => approvePrayer(p.id)}
+                  style={styles.approveBtn}
+                >
+                  Approve ✓
+                </button>
               )}
 
-              <h4 style={styles.name}>{p.name || "Anonymous"}</h4>
-              <p style={styles.text}>{p.request}</p>
+              {/* EDIT / DELETE */}
+              {canModify(p) && (
+                <div style={styles.actions}>
+                  <button
+                    onClick={() => editPrayer(p)}
+                    style={styles.editBtn}
+                  >
+                    ✏️
+                  </button>
 
-              <div style={styles.footer}>
-                {p.created_at && (
-                  <span style={styles.date}>
-                    {new Date(p.created_at).toLocaleString()}
-                  </span>
-                )}
-
-                {isAdmin && p.id && !p.id.startsWith("d") && (
-                  <div style={{ display: "flex", gap: 8 }}>
-                    {!p.is_approved && (
-                      <button
-                        onClick={() => approvePrayer(p.id)}
-                        style={styles.approveBtn}
-                      >
-                        ✓
-                      </button>
-                    )}
-                    <button
-                      onClick={() => deletePrayer(p.id)}
-                      style={styles.deleteBtn}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                )}
-              </div>
+                  <button
+                    onClick={() => deletePrayer(p.id)}
+                    style={styles.deleteBtn}
+                  >
+                    🗑️
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}
       </div>
-
-      {/* 🔥 GLOBAL STYLES */}
-      <style>{`
-        input, textarea {
-          display: block;
-          font-family: inherit;
-          box-sizing: border-box;
-        }
-
-        .prayer-card:hover {
-          transform: scale(1.05);
-          box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-          transition: 0.3s;
-        }
-
-        button:hover {
-          opacity: 0.9;
-          transform: translateY(-1px);
-        }
-
-        @keyframes glow {
-          0% { box-shadow: 0 0 10px gold; }
-          50% { box-shadow: 0 0 25px gold; }
-          100% { box-shadow: 0 0 10px gold; }
-        }
-      `}</style>
     </div>
   );
 }
@@ -207,7 +188,6 @@ const gradients = [
   "linear-gradient(135deg, #4D96FF, #6BCB77)",
   "linear-gradient(135deg, #FF6B6B, #FFD93D)",
   "linear-gradient(135deg, #FF9800, #FFC107)",
-  "linear-gradient(135deg, #3F51B5, #5C6BC0)",
 ];
 
 const styles = {
@@ -217,60 +197,73 @@ const styles = {
     background: "linear-gradient(135deg, #E6E6FA, #ADD8E6)",
   },
 
-  title: {
-    color: "#6A1B9A",
+  title: { color: "#6A1B9A" },
+
+  openBtn: {
+    padding: "10px 16px",
+    background: "#6A1B9A",
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
     marginBottom: 20,
-    textAlign: "center",
   },
 
-  formWrapper: {
+  overlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    background: "rgba(0,0,0,0.6)",
     display: "flex",
     justifyContent: "center",
-    marginBottom: 40,
+    alignItems: "center",
+    zIndex: 9999,
   },
 
-  formCard: {
-    width: "100%",
-    maxWidth: 500,
+  modal: {
+    background: "#fff",
     padding: 25,
-    borderRadius: 16,
-    background: "rgba(255,255,255,0.9)",
-    backdropFilter: "blur(10px)",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+    borderRadius: 12,
+    width: 400,
     display: "flex",
     flexDirection: "column",
-    gap: 12,
+    gap: 10,
+  },
+
+  modalTitle: {
+    color: "#6A1B9A",
   },
 
   input: {
-    width: "100%",
-    padding: "12px 14px",
-    borderRadius: 10,
-    border: "1px solid #ddd",
-    outline: "none",
-    fontSize: 14,
+    padding: 10,
+    borderRadius: 8,
+    border: "1px solid #ccc",
   },
 
   textarea: {
-    width: "100%",
-    height: 100,
-    padding: "12px 14px",
-    borderRadius: 10,
-    border: "1px solid #ddd",
-    outline: "none",
-    resize: "none",
-    fontSize: 14,
-    lineHeight: "1.5",
+    padding: 10,
+    minHeight: 100,
+    borderRadius: 8,
   },
 
-  button: {
-    background: "linear-gradient(135deg, #6A1B9A, #9C27B0)",
-    color: "#fff",
-    padding: "12px",
+  btnRow: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: 10,
+  },
+
+  cancelBtn: {
+    padding: "8px 14px",
+    background: "#ccc",
     border: "none",
-    borderRadius: 10,
-    cursor: "pointer",
-    fontWeight: "bold",
+  },
+
+  saveBtn: {
+    padding: "8px 14px",
+    background: "#6A1B9A",
+    color: "#fff",
+    border: "none",
   },
 
   grid: {
@@ -286,65 +279,47 @@ const styles = {
     position: "relative",
   },
 
-  name: {
-    margin: 0,
-    fontWeight: "bold",
-  },
-
-  text: {
-    margin: "10px 0",
-    fontStyle: "italic",
-  },
-
-  footer: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  date: {
-    fontSize: 12,
-    opacity: 0.8,
-  },
-
-  approveBtn: {
-    background: "#4CAF50",
-    color: "#fff",
-    border: "none",
-    padding: "4px 8px",
-    borderRadius: 6,
-    cursor: "pointer",
-  },
-
-  deleteBtn: {
-    background: "#f44336",
-    color: "#fff",
-    border: "none",
-    padding: "4px 8px",
-    borderRadius: 6,
-    cursor: "pointer",
-  },
-
-  pendingBadge: {
+  tick: {
     position: "absolute",
     top: 10,
     right: 10,
-    background: "orange",
-    padding: "3px 8px",
-    borderRadius: 8,
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-
-  newBadge: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-    background: "gold",
+    background: "#00e676",
     color: "#000",
     padding: "3px 8px",
     borderRadius: 8,
     fontSize: 12,
     fontWeight: "bold",
+  },
+
+  approveBtn: {
+    marginTop: 10,
+    background: "#00c853",
+    color: "#fff",
+    border: "none",
+    padding: "5px 10px",
+    borderRadius: 6,
+    cursor: "pointer",
+  },
+
+  actions: {
+    marginTop: 10,
+    display: "flex",
+    gap: 8,
+  },
+
+  editBtn: {
+    background: "#1976D2",
+    border: "none",
+    color: "#fff",
+    padding: "5px 10px",
+    borderRadius: 6,
+  },
+
+  deleteBtn: {
+    background: "#D32F2F",
+    border: "none",
+    color: "#fff",
+    padding: "5px 10px",
+    borderRadius: 6,
   },
 };
