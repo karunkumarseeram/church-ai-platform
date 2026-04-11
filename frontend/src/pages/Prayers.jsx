@@ -9,77 +9,118 @@ export default function Prayers() {
   const [text, setText] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingPage, setLoadingPage] = useState(true);
 
   const isAdmin = userRole === "ADMIN" || userRole === "PASTOR";
 
+  // ✅ DEFAULT COUNTRY PRAYERS
+  const defaultPrayers = [
+    { id: "d1", name: "Common Prayer", request: "Pray for peace and unity in our nation 🇮🇳" },
+    { id: "d2", name: "Common Prayer", request: "Pray for our leaders to have wisdom and integrity" },
+    { id: "d3", name: "Common Prayer", request: "Pray for jobs and financial stability for families" },
+    { id: "d4", name: "Common Prayer", request: "Pray for protection from disasters and crises" },
+    { id: "d5", name: "Scripture Prayer", request: "Heal our land and forgive our sins (2 Chronicles 7:14)" },
+    { id: "d6", name: "Scripture Prayer", request: "Let justice flow like a river (Amos 5:24)" },
+  ];
+
   const loadPrayers = async () => {
-    const url = isAdmin ? "/prayers/admin" : "/prayers";
-    const res = await API.get(url);
-    setPrayers(res.data);
+    try {
+      setLoadingPage(true);
+      const url = isAdmin ? "/prayers/admin" : "/prayers";
+      const res = await API.get(url);
+      setPrayers(res.data);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load prayers");
+    } finally {
+      setLoadingPage(false);
+    }
   };
 
   useEffect(() => {
     loadPrayers();
-  }, []);
+  }, [isAdmin]);
 
   const submitPrayer = async () => {
-    if (!text) return alert("Write your prayer 🙏");
+    if (!text.trim()) return alert("Write your prayer 🙏");
 
-    setLoading(true);
-    await API.post("/prayers", { name, request: text });
-    setText("");
-    setName("");
-    setLoading(false);
-    loadPrayers();
+    try {
+      setLoading(true);
+      await API.post("/prayers", { name, request: text });
+      setText("");
+      setName("");
+      loadPrayers();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit prayer");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const approvePrayer = async (id) => {
-    await API.put(`/prayers/${id}/approve`);
-    loadPrayers();
+    try {
+      await API.put(`/prayers/${id}/approve`);
+      loadPrayers();
+    } catch {
+      alert("Failed to approve");
+    }
   };
 
   const deletePrayer = async (id) => {
     if (!window.confirm("Delete this prayer?")) return;
-    await API.delete(`/prayers/${id}`);
-    loadPrayers();
+    try {
+      await API.delete(`/prayers/${id}`);
+      loadPrayers();
+    } catch {
+      alert("Failed to delete");
+    }
   };
 
   const isNew = (date) => {
+    if (!date) return false;
     const d = new Date(date);
     const now = new Date();
-    return (now - d) / (1000 * 60 * 60) < 24; // within 24h
+    return (now - d) / (1000 * 60 * 60) < 24;
   };
+
+  if (loadingPage) return <h2 style={{ padding: 30 }}>Loading prayers...</h2>;
+
+  // ✅ MERGE DEFAULT + API PRAYERS
+  const allPrayers = [...defaultPrayers, ...prayers];
 
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>🙏 Prayer Requests</h2>
 
       {/* 🔥 FORM */}
-      <div style={styles.formCard}>
-        <h3>Share Your Prayer</h3>
+      <div style={styles.formWrapper}>
+        <div style={styles.formCard}>
+          <h3>Share Your Prayer</h3>
 
-        <input
-          placeholder="Your name (optional)"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          style={styles.input}
-        />
+          <input
+            placeholder="Your name (optional)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            style={styles.input}
+          />
 
-        <textarea
-          placeholder="Write your prayer..."
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          style={styles.textarea}
-        />
+          <textarea
+            placeholder="Write your prayer..."
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            style={styles.textarea}
+          />
 
-        <button onClick={submitPrayer} style={styles.button}>
-          {loading ? "Submitting..." : "Submit Prayer"}
-        </button>
+          <button onClick={submitPrayer} style={styles.button} disabled={loading}>
+            {loading ? "Submitting..." : "Submit Prayer"}
+          </button>
+        </div>
       </div>
 
-      {/* 🔥 GRID */}
+      {/* 🔥 PRAYER GRID */}
       <div style={styles.grid}>
-        {prayers.map((p, idx) => {
+        {allPrayers.map((p, idx) => {
           const newPrayer = isNew(p.created_at);
 
           return (
@@ -93,23 +134,22 @@ export default function Prayers() {
                 animation: newPrayer ? "glow 2s infinite" : "none",
               }}
             >
-              {/* BADGES */}
               {newPrayer && <span style={styles.newBadge}>NEW</span>}
-              {isAdmin && !p.is_approved && (
+              {isAdmin && p.id && !p.id.startsWith("d") && !p.is_approved && (
                 <span style={styles.pendingBadge}>Pending</span>
               )}
 
-              {/* CONTENT */}
               <h4 style={styles.name}>{p.name || "Anonymous"}</h4>
               <p style={styles.text}>{p.request}</p>
 
-              {/* FOOTER */}
               <div style={styles.footer}>
-                <span style={styles.date}>
-                  {new Date(p.created_at).toLocaleString()}
-                </span>
+                {p.created_at && (
+                  <span style={styles.date}>
+                    {new Date(p.created_at).toLocaleString()}
+                  </span>
+                )}
 
-                {isAdmin && (
+                {isAdmin && p.id && !p.id.startsWith("d") && (
                   <div style={{ display: "flex", gap: 8 }}>
                     {!p.is_approved && (
                       <button
@@ -133,12 +173,23 @@ export default function Prayers() {
         })}
       </div>
 
-      {/* 🔥 ANIMATIONS */}
+      {/* 🔥 GLOBAL STYLES */}
       <style>{`
+        input, textarea {
+          display: block;
+          font-family: inherit;
+          box-sizing: border-box;
+        }
+
         .prayer-card:hover {
           transform: scale(1.05);
           box-shadow: 0 10px 30px rgba(0,0,0,0.4);
           transition: 0.3s;
+        }
+
+        button:hover {
+          opacity: 0.9;
+          transform: translateY(-1px);
         }
 
         @keyframes glow {
@@ -165,69 +216,97 @@ const styles = {
     minHeight: "100vh",
     background: "linear-gradient(135deg, #E6E6FA, #ADD8E6)",
   },
+
   title: {
     color: "#6A1B9A",
     marginBottom: 20,
+    textAlign: "center",
   },
+
+  formWrapper: {
+    display: "flex",
+    justifyContent: "center",
+    marginBottom: 40,
+  },
+
   formCard: {
-    background: "#fff",
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 30,
-    boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
+    width: "100%",
+    maxWidth: 500,
+    padding: 25,
+    borderRadius: 16,
+    background: "rgba(255,255,255,0.9)",
+    backdropFilter: "blur(10px)",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
   },
+
   input: {
     width: "100%",
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 8,
-    border: "1px solid #ccc",
+    padding: "12px 14px",
+    borderRadius: 10,
+    border: "1px solid #ddd",
+    outline: "none",
+    fontSize: 14,
   },
+
   textarea: {
     width: "100%",
-    height: 90,
-    padding: 10,
-    borderRadius: 8,
-    border: "1px solid #ccc",
-    marginBottom: 10,
+    height: 100,
+    padding: "12px 14px",
+    borderRadius: 10,
+    border: "1px solid #ddd",
+    outline: "none",
+    resize: "none",
+    fontSize: 14,
+    lineHeight: "1.5",
   },
+
   button: {
-    background: "#6A1B9A",
+    background: "linear-gradient(135deg, #6A1B9A, #9C27B0)",
     color: "#fff",
-    padding: "10px 16px",
+    padding: "12px",
     border: "none",
-    borderRadius: 8,
+    borderRadius: 10,
     cursor: "pointer",
+    fontWeight: "bold",
   },
+
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
     gap: 15,
   },
+
   card: {
     padding: 20,
     borderRadius: 12,
     color: "#fff",
     position: "relative",
-    boxShadow: "0 6px 20px rgba(0,0,0,0.2)",
   },
+
   name: {
     margin: 0,
     fontWeight: "bold",
   },
+
   text: {
     margin: "10px 0",
     fontStyle: "italic",
   },
+
   footer: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
   },
+
   date: {
     fontSize: 12,
     opacity: 0.8,
   },
+
   approveBtn: {
     background: "#4CAF50",
     color: "#fff",
@@ -236,6 +315,7 @@ const styles = {
     borderRadius: 6,
     cursor: "pointer",
   },
+
   deleteBtn: {
     background: "#f44336",
     color: "#fff",
@@ -244,6 +324,7 @@ const styles = {
     borderRadius: 6,
     cursor: "pointer",
   },
+
   pendingBadge: {
     position: "absolute",
     top: 10,
@@ -254,6 +335,7 @@ const styles = {
     fontSize: 12,
     fontWeight: "bold",
   },
+
   newBadge: {
     position: "absolute",
     top: 10,

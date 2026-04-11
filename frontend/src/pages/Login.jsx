@@ -250,7 +250,7 @@ export default function Login() {
             New Member? Signup
           </p>
 
-          <p style={styles.link} onClick={() => navigate("/forgot")}>
+          <p style={styles.link} onClick={() => navigate("/forgot-password")}>
             Forgot Password?
           </p>
         </div>

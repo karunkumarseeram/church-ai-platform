@@ -15,7 +15,11 @@ import AddEvent from "./pages/AddEvent";
 import Layout from "./components/Layout";
 import Prayers from "./pages/Prayers";
 
-// 🔐 Private Route with optional role restriction
+// 🔐 NEW IMPORTS (IMPORTANT)
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+
+// 🔐 Private Route
 function PrivateRoute({ children, allowedRoles = [] }) {
   const { token, userRole } = useContext(AuthContext);
 
@@ -49,6 +53,10 @@ function App() {
           <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
           <Route path="/services" element={<Services />} />
 
+          {/* 🔐 AUTH ROUTES ADDED */}
+          <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+          <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
+
           {/* 🔐 Protected Routes */}
           <Route
             path="/services/:id"
@@ -68,7 +76,6 @@ function App() {
             }
           />
 
-          {/* Admin-only Members Page */}
           <Route
             path="/members"
             element={
@@ -79,22 +86,22 @@ function App() {
           />
 
           <Route
-              path="/events"
-              element={
-                <PrivateRoute>
-                  <Layout><Events /></Layout>
-                </PrivateRoute>
-              }
-            />
+            path="/events"
+            element={
+              <PrivateRoute>
+                <Layout><Events /></Layout>
+              </PrivateRoute>
+            }
+          />
 
-            <Route
-              path="/add-event"
-              element={
-                <PrivateRoute allowedRoles={["ADMIN", "PASTOR"]}>
-                  <Layout><AddEvent /></Layout>
-                </PrivateRoute>
-              }
-            />
+          <Route
+            path="/add-event"
+            element={
+              <PrivateRoute allowedRoles={["ADMIN", "PASTOR"]}>
+                <Layout><AddEvent /></Layout>
+              </PrivateRoute>
+            }
+          />
 
           <Route
             path="/donations"
@@ -104,6 +111,7 @@ function App() {
               </PrivateRoute>
             }
           />
+
           <Route
             path="/prayers"
             element={
@@ -112,6 +120,7 @@ function App() {
               </PrivateRoute>
             }
           />
+
           <Route
             path="/live"
             element={
@@ -121,7 +130,7 @@ function App() {
             }
           />
 
-          {/* 🔄 Catch-all route */}
+          {/* 🔄 Catch-all */}
           <Route path="*" element={<Navigate to="/" />} />
 
         </Routes>

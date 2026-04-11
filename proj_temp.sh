@@ -57,8 +57,13 @@ touch frontend/src/components/Layout.jsx
 touch frontend/src/components/Sidebar.jsx
 touch frontend/src/components/Navbar.jsx
 touch frontend/src/components/AuthLayout.jsx
-touch frontend/src/components/AdminDashboard.jsx
+touch frontend/src/components/AdminDashboardHeader.jsx
+touch frontend/src/components/AddEventModal.jsx
+touch frontend/src/components/RaisePrayerModal.jsx
 
+
+
+touch frontend/src/pages/AddEvent.jsx
 
 touch frontend/src/pages/AdminLogin.jsx
 touch frontend/src/pages/AdminUser.jsx
@@ -72,6 +77,7 @@ touch frontend/src/pages/Login.jsx
 touch frontend/src/pages/Members.jsx
 touch frontend/src/pages/ResetPassword.jsx
 touch frontend/src/pages/ServiceDetails.jsx
+touch frontend/src/pages/Services.jsx
 touch frontend/src/pages/Signup.jsx
 
 
