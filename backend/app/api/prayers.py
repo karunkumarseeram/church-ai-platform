@@ -10,7 +10,6 @@ from app.core.security import get_current_user
 
 router = APIRouter(prefix="/prayers", tags=["Prayers"])
 
-
 # ✅ Create Prayer Request
 @router.post("/", response_model=PrayerRequestOut)
 def create_prayer(
