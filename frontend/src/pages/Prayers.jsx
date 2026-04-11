@@ -11,23 +11,52 @@ export default function Prayers() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const isAdmin = userRole === "ADMIN" || userRole === "PASTOR";
+  const isAdmin =
+    userRole === "ADMIN" || userRole === "PASTOR";
 
   const commonPrayers = [
-    { id: "c1", name: "Common Prayer", request: "Pray for peace 🇮🇳", is_approved: true },
-    { id: "c2", name: "Common Prayer", request: "Pray for church growth 🙏", is_approved: true },
-    { id: "c3", name: "Common Prayer", request: "Pray for families 👨‍👩‍👧‍👦", is_approved: true },
+    {
+      id: "c1",
+      name: "Common Prayer",
+      request: "Pray for peace 🇮🇳",
+      is_approved: true,
+    },
+    {
+      id: "c2",
+      name: "Common Prayer",
+      request: "Pray for church growth 🙏",
+      is_approved: true,
+    },
+    {
+      id: "c3",
+      name: "Common Prayer",
+      request: "Pray for families 👨‍👩‍👧‍👦",
+      is_approved: true,
+    },
   ];
 
+  // ✅ FIXED: wait for userRole before calling API
   const loadPrayers = async () => {
-    const url = isAdmin ? "/prayers/admin" : "/prayers";
-    const res = await API.get(url);
-    setPrayers([...commonPrayers, ...res.data]);
+    if (!userRole) return; // important fix
+
+    const admin =
+      userRole === "ADMIN" || userRole === "PASTOR";
+
+    const url = admin ? "/prayers/admin" : "/prayers";
+
+    try {
+      const res = await API.get(url);
+
+      setPrayers([...commonPrayers, ...res.data]);
+    } catch (err) {
+      console.error("Failed to load prayers:", err);
+    }
   };
 
+  // ✅ FIXED: re-run when role becomes available after refresh
   useEffect(() => {
     loadPrayers();
-  }, []);
+  }, [userRole]);
 
   const submitPrayer = async () => {
     if (!text.trim()) return alert("Write your prayer 🙏");
@@ -43,16 +72,15 @@ export default function Prayers() {
     setText("");
     setLoading(false);
     setOpen(false);
+
     loadPrayers();
   };
 
-  // 🔥 APPROVE PRAYER
   const approvePrayer = async (id) => {
     await API.put(`/prayers/${id}/approve`);
     loadPrayers();
   };
 
-  // 🔥 EDIT
   const editPrayer = async (p) => {
     const newName = prompt("Edit name:", p.name);
     const newText = prompt("Edit prayer:", p.request);
@@ -67,9 +95,9 @@ export default function Prayers() {
     loadPrayers();
   };
 
-  // 🔥 DELETE
   const deletePrayer = async (id) => {
     if (!window.confirm("Delete this prayer?")) return;
+
     await API.delete(`/prayers/${id}`);
     loadPrayers();
   };
@@ -83,8 +111,10 @@ export default function Prayers() {
     <div style={styles.container}>
       <h2 style={styles.title}>🙏 Prayer Requests</h2>
 
-      {/* OPEN FORM */}
-      <button style={styles.openBtn} onClick={() => setOpen(true)}>
+      <button
+        style={styles.openBtn}
+        onClick={() => setOpen(true)}
+      >
         + Raise Prayer Request
       </button>
 
@@ -92,7 +122,9 @@ export default function Prayers() {
       {open && (
         <div style={styles.overlay}>
           <div style={styles.modal}>
-            <h3 style={styles.modalTitle}>Share Your Prayer</h3>
+            <h3 style={styles.modalTitle}>
+              Share Your Prayer
+            </h3>
 
             <input
               placeholder="Your Name (optional)"
@@ -109,11 +141,17 @@ export default function Prayers() {
             />
 
             <div style={styles.btnRow}>
-              <button onClick={() => setOpen(false)} style={styles.cancelBtn}>
+              <button
+                onClick={() => setOpen(false)}
+                style={styles.cancelBtn}
+              >
                 Cancel
               </button>
 
-              <button onClick={submitPrayer} style={styles.saveBtn}>
+              <button
+                onClick={submitPrayer}
+                style={styles.saveBtn}
+              >
                 {loading ? "Submitting..." : "Submit"}
               </button>
             </div>
@@ -121,7 +159,7 @@ export default function Prayers() {
         </div>
       )}
 
-      {/* PRAYER CARDS */}
+      {/* PRAYER LIST */}
       <div style={styles.grid}>
         {prayers.map((p, idx) => {
           const approved = p.is_approved;
@@ -131,33 +169,37 @@ export default function Prayers() {
               key={p.id}
               style={{
                 ...styles.card,
-                background: gradients[idx % gradients.length],
-
-                // ⭐ APPROVED STYLE DIFFERENCE
-                border: approved ? "3px solid #00e676" : "none",
+                background:
+                  gradients[idx % gradients.length],
+                border: approved
+                  ? "3px solid #00e676"
+                  : "none",
                 boxShadow: approved
                   ? "0 0 15px rgba(0,255,100,0.5)"
                   : "0 4px 10px rgba(0,0,0,0.2)",
                 opacity: approved ? 1 : 0.85,
               }}
             >
-              {/* ✅ APPROVED TICK */}
-              {approved && <div style={styles.tick}>✔ Approved</div>}
+              {approved && (
+                <div style={styles.tick}>
+                  ✔ Approved
+                </div>
+              )}
 
               <h4>{p.name || "Anonymous"}</h4>
               <p>{p.request}</p>
 
-              {/* ADMIN ACTIONS */}
               {isAdmin && !approved && (
                 <button
-                  onClick={() => approvePrayer(p.id)}
+                  onClick={() =>
+                    approvePrayer(p.id)
+                  }
                   style={styles.approveBtn}
                 >
                   Approve ✓
                 </button>
               )}
 
-              {/* EDIT / DELETE */}
               {canModify(p) && (
                 <div style={styles.actions}>
                   <button
@@ -168,7 +210,9 @@ export default function Prayers() {
                   </button>
 
                   <button
-                    onClick={() => deletePrayer(p.id)}
+                    onClick={() =>
+                      deletePrayer(p.id)
+                    }
                     style={styles.deleteBtn}
                   >
                     🗑️
@@ -196,9 +240,7 @@ const styles = {
     minHeight: "100vh",
     background: "linear-gradient(135deg, #E6E6FA, #ADD8E6)",
   },
-
   title: { color: "#6A1B9A" },
-
   openBtn: {
     padding: "10px 16px",
     background: "#6A1B9A",
@@ -207,7 +249,6 @@ const styles = {
     borderRadius: 8,
     marginBottom: 20,
   },
-
   overlay: {
     position: "fixed",
     top: 0,
@@ -220,7 +261,6 @@ const styles = {
     alignItems: "center",
     zIndex: 9999,
   },
-
   modal: {
     background: "#fff",
     padding: 25,
@@ -230,55 +270,45 @@ const styles = {
     flexDirection: "column",
     gap: 10,
   },
-
-  modalTitle: {
-    color: "#6A1B9A",
-  },
-
+  modalTitle: { color: "#6A1B9A" },
   input: {
     padding: 10,
     borderRadius: 8,
     border: "1px solid #ccc",
   },
-
   textarea: {
     padding: 10,
     minHeight: 100,
     borderRadius: 8,
   },
-
   btnRow: {
     display: "flex",
     justifyContent: "flex-end",
     gap: 10,
   },
-
   cancelBtn: {
     padding: "8px 14px",
     background: "#ccc",
     border: "none",
   },
-
   saveBtn: {
     padding: "8px 14px",
     background: "#6A1B9A",
     color: "#fff",
     border: "none",
   },
-
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+    gridTemplateColumns:
+      "repeat(auto-fill, minmax(260px, 1fr))",
     gap: 15,
   },
-
   card: {
     padding: 20,
     borderRadius: 12,
     color: "#fff",
     position: "relative",
   },
-
   tick: {
     position: "absolute",
     top: 10,
@@ -290,7 +320,6 @@ const styles = {
     fontSize: 12,
     fontWeight: "bold",
   },
-
   approveBtn: {
     marginTop: 10,
     background: "#00c853",
@@ -300,13 +329,11 @@ const styles = {
     borderRadius: 6,
     cursor: "pointer",
   },
-
   actions: {
     marginTop: 10,
     display: "flex",
     gap: 8,
   },
-
   editBtn: {
     background: "#1976D2",
     border: "none",
@@ -314,7 +341,6 @@ const styles = {
     padding: "5px 10px",
     borderRadius: 6,
   },
-
   deleteBtn: {
     background: "#D32F2F",
     border: "none",
