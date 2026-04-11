@@ -2,41 +2,57 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.chr_models import PrayerRequest, User
-from app.schemas.prayer import PrayerRequestCreate, PrayerRequestOut
+from app.schemas.prayer import PrayerRequestCreate
+from app.core.security import get_current_user
 from typing import List
 import uuid
-from app.core.security import get_current_user
-
 
 router = APIRouter(prefix="/prayers", tags=["Prayers"])
 
-# ✅ Create Prayer Request
-@router.post("/", response_model=PrayerRequestOut)
+# =========================
+# CREATE PRAYER (USER)
+# =========================
+@router.post("/")
 def create_prayer(
     payload: PrayerRequestCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)  # make sure you have this
+    current_user: User = Depends(get_current_user)
 ):
     prayer = PrayerRequest(
         user_id=current_user.id,
-        name=None if payload.is_anonymous else payload.name,
-        request=payload.request
+        name=payload.name,
+        request=payload.request,
+        is_approved=False
     )
+
     db.add(prayer)
     db.commit()
     db.refresh(prayer)
     return prayer
 
-# ✅ Get Approved Prayers (Public)
-@router.get("/", response_model=List[PrayerRequestOut])
-def get_prayers(db: Session = Depends(get_db)):
-    return db.query(PrayerRequest).filter(
+# ✅ Prayer Count API
+@router.get("/count")
+def get_prayer_count(db: Session = Depends(get_db)):
+    count = db.query(PrayerRequest).filter(
         PrayerRequest.is_approved == True
-    ).order_by(PrayerRequest.created_at.desc()).all()
+    ).count()
+
+    return {"count": count}
+
+# =========================
+# GET APPROVED PRAYERS (PUBLIC)
+# =========================
+@router.get("/")
+def get_prayers(db: Session = Depends(get_db)):
+    return db.query(PrayerRequest)\
+        .filter(PrayerRequest.is_approved == True)\
+        .order_by(PrayerRequest.created_at.desc()).all()
 
 
-# ✅ Admin: Get All
-@router.get("/admin", response_model=List[PrayerRequestOut])
+# =========================
+# ADMIN GET ALL
+# =========================
+@router.get("/admin")
 def get_all_prayers(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -44,20 +60,26 @@ def get_all_prayers(
     if current_user.role not in ["ADMIN", "PASTOR"]:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    return db.query(PrayerRequest).order_by(PrayerRequest.created_at.desc()).all()
+    return db.query(PrayerRequest)\
+        .order_by(PrayerRequest.created_at.desc()).all()
 
 
-# ✅ Approve Prayer
+# =========================
+# APPROVE PRAYER (ADMIN ONLY)
+# =========================
 @router.put("/{id}/approve")
 def approve_prayer(
     id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    if current_user.role not in ["ADMIN", "PASTOR"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
     prayer = db.query(PrayerRequest).get(id)
 
     if not prayer:
-        raise HTTPException(404, "Prayer not found")
+        raise HTTPException(404, "Not found")
 
     prayer.is_approved = True
     db.commit()
@@ -65,7 +87,37 @@ def approve_prayer(
     return {"message": "Approved"}
 
 
-# ✅ Delete Prayer
+# =========================
+# UPDATE PRAYER (USER OWN OR ADMIN)
+# =========================
+@router.put("/{id}")
+def update_prayer(
+    id: uuid.UUID,
+    payload: PrayerRequestCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    prayer = db.query(PrayerRequest).get(id)
+
+    if not prayer:
+        raise HTTPException(404, "Not found")
+
+    # admin can edit all
+    if current_user.role not in ["ADMIN", "PASTOR"]:
+        if prayer.user_id != current_user.id:
+            raise HTTPException(403, "Not allowed")
+
+    prayer.name = payload.name
+    prayer.request = payload.request
+
+    db.commit()
+    db.refresh(prayer)
+    return prayer
+
+
+# =========================
+# DELETE PRAYER (USER OWN OR ADMIN)
+# =========================
 @router.delete("/{id}")
 def delete_prayer(
     id: uuid.UUID,
@@ -76,6 +128,11 @@ def delete_prayer(
 
     if not prayer:
         raise HTTPException(404, "Not found")
+
+    # admin can delete all
+    if current_user.role not in ["ADMIN", "PASTOR"]:
+        if prayer.user_id != current_user.id:
+            raise HTTPException(403, "Not allowed")
 
     db.delete(prayer)
     db.commit()

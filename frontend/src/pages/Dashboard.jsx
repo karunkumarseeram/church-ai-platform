@@ -37,17 +37,25 @@ export default function Dashboard() {
   const getGradientColor = (idx) => gradientColors[idx % gradientColors.length].split(",").map(c => c.trim()).join(",");
 
   const loadDashboard = async () => {
-    try {
-      const res = await API.get("/dashboard");
-      setStats(res.data);
-      const eventRes = await API.get("/events");
-      setEvents(eventRes.data);
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    const [dashboardRes, eventsRes, prayersRes] = await Promise.all([
+      API.get("/dashboard"),
+      API.get("/events"),
+      API.get("/prayers/count")
+    ]);
+
+    setStats({
+      ...dashboardRes.data,
+      prayers: prayersRes.data.count
+    });
+
+    setEvents(eventsRes.data);
+  } catch (err) {
+    console.log(err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => { loadDashboard(); }, []);
 
