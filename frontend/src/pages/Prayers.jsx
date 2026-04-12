@@ -11,6 +11,9 @@ export default function Prayers() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // ✅ NEW: toast message state
+  const [message, setMessage] = useState("");
+
   const isAdmin =
     userRole === "ADMIN" || userRole === "PASTOR";
 
@@ -35,9 +38,8 @@ export default function Prayers() {
     },
   ];
 
-  // ✅ FIXED: wait for userRole before calling API
   const loadPrayers = async () => {
-    if (!userRole) return; // important fix
+    if (!userRole) return;
 
     const admin =
       userRole === "ADMIN" || userRole === "PASTOR";
@@ -46,14 +48,12 @@ export default function Prayers() {
 
     try {
       const res = await API.get(url);
-
       setPrayers([...commonPrayers, ...res.data]);
     } catch (err) {
       console.error("Failed to load prayers:", err);
     }
   };
 
-  // ✅ FIXED: re-run when role becomes available after refresh
   useEffect(() => {
     loadPrayers();
   }, [userRole]);
@@ -63,21 +63,41 @@ export default function Prayers() {
 
     setLoading(true);
 
-    await API.post("/prayers", {
-      name,
-      request: text,
-    });
+    try {
+      await API.post("/prayers", {
+        name,
+        request: text,
+      });
 
-    setName("");
-    setText("");
+      // ✅ Success message
+      setMessage(
+        isAdmin
+          ? "✅ Prayer added successfully"
+          : "🙏 Your prayer request has been submitted!"
+      );
+
+      setName("");
+      setText("");
+      setOpen(false);
+
+      loadPrayers();
+
+      setTimeout(() => setMessage(""), 3000);
+    } catch (err) {
+      console.error(err);
+
+      // ❌ Error message
+      setMessage("❌ Failed to submit prayer");
+      setTimeout(() => setMessage(""), 3000);
+    }
+
     setLoading(false);
-    setOpen(false);
-
-    loadPrayers();
   };
 
   const approvePrayer = async (id) => {
     await API.put(`/prayers/${id}/approve`);
+    setMessage("✅ Prayer approved");
+    setTimeout(() => setMessage(""), 3000);
     loadPrayers();
   };
 
@@ -92,6 +112,9 @@ export default function Prayers() {
       request: newText,
     });
 
+    setMessage("✏️ Prayer updated");
+    setTimeout(() => setMessage(""), 3000);
+
     loadPrayers();
   };
 
@@ -99,6 +122,10 @@ export default function Prayers() {
     if (!window.confirm("Delete this prayer?")) return;
 
     await API.delete(`/prayers/${id}`);
+
+    setMessage("🗑️ Prayer deleted");
+    setTimeout(() => setMessage(""), 3000);
+
     loadPrayers();
   };
 
@@ -110,6 +137,13 @@ export default function Prayers() {
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>🙏 Prayer Requests</h2>
+
+      {/* ✅ TOAST MESSAGE */}
+      {message && (
+        <div style={styles.toast}>
+          {message}
+        </div>
+      )}
 
       <button
         style={styles.openBtn}
@@ -241,6 +275,19 @@ const styles = {
     background: "linear-gradient(135deg, #E6E6FA, #ADD8E6)",
   },
   title: { color: "#6A1B9A" },
+
+  toast: {
+    position: "fixed",
+    top: 20,
+    right: 20,
+    background: "#4CAF50",
+    color: "#fff",
+    padding: "10px 16px",
+    borderRadius: 8,
+    boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+    zIndex: 9999,
+  },
+
   openBtn: {
     padding: "10px 16px",
     background: "#6A1B9A",
