@@ -2,14 +2,47 @@ import { useState, useEffect } from "react";
 import API from "../services/api";
 
 export default function AddEventModal({ onClose, onSave, event }) {
-  const [title, setTitle] = useState(event?.title || "");
-  const [description, setDescription] = useState(event?.description || "");
-  const [location, setLocation] = useState(event?.location || "");
-  const [date, setDate] = useState(event?.event_date ? event.event_date.split("T")[0] : "");
-  const [time, setTime] = useState(event?.event_date ? event.event_date.split("T")[1]?.slice(0,5) : "");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [location, setLocation] = useState("");
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
 
+  /* ================================
+     LOAD EDIT DATA
+  ================================= */
+  useEffect(() => {
+    if (event) {
+      setTitle(event.title || "");
+      setDescription(event.description || "");
+      setLocation(event.location || "");
+
+      if (event.event_date) {
+        const dt = new Date(event.event_date);
+        const isoDate = dt.toISOString().split("T")[0];
+        const isoTime = dt.toTimeString().slice(0, 5);
+
+        setDate(isoDate);
+        setTime(isoTime);
+      }
+    } else {
+      setTitle("");
+      setDescription("");
+      setLocation("");
+      setDate("");
+      setTime("");
+    }
+  }, [event]);
+
+  /* ================================
+     SAVE EVENT
+  ================================= */
   const handleSave = async () => {
-    if (!title || !date || !time) return alert("Title, date and time are required!");
+    if (!title || !date || !time) {
+      alert("Title, date and time are required!");
+      return;
+    }
+
     const eventData = {
       title,
       description,
@@ -23,6 +56,7 @@ export default function AddEventModal({ onClose, onSave, event }) {
       } else {
         await API.post("/events", eventData);
       }
+
       onSave();
     } catch (err) {
       console.error("Failed to save event", err);
@@ -30,9 +64,15 @@ export default function AddEventModal({ onClose, onSave, event }) {
   };
 
   return (
-    <div style={styles.overlay}>
-      <div style={styles.modal}>
-        <h3>{event?.id ? "Edit Event" : "Add Event"}</h3>
+    /* ================================
+       OVERLAY (CLICK OUTSIDE CLOSE FIX)
+    ================================= */
+    <div style={styles.overlay} onClick={onClose}>
+      
+      {/* MODAL BOX */}
+      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <h3>{event?.id ? "✏️ Edit Event" : "➕ Add Event"}</h3>
+
         <div style={styles.form}>
           <input
             style={styles.input}
@@ -40,24 +80,28 @@ export default function AddEventModal({ onClose, onSave, event }) {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
+
           <textarea
-            style={{ ...styles.input, resize: "vertical", minHeight: 60 }}
+            style={{ ...styles.input, resize: "vertical", minHeight: 70 }}
             placeholder="Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
+
           <input
             style={styles.input}
             placeholder="Location"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
           />
+
           <input
             style={styles.input}
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
+
           <input
             style={styles.input}
             type="time"
@@ -65,32 +109,55 @@ export default function AddEventModal({ onClose, onSave, event }) {
             onChange={(e) => setTime(e.target.value)}
           />
         </div>
+
         <div style={styles.buttons}>
-          <button style={styles.cancelBtn} onClick={onClose}>Cancel</button>
-          <button style={styles.saveBtn} onClick={handleSave}>Save</button>
+          <button style={styles.cancelBtn} onClick={onClose}>
+            Cancel
+          </button>
+
+          <button style={styles.saveBtn} onClick={handleSave}>
+            Save
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
+/* ================================
+   STYLES
+================================ */
 const styles = {
   overlay: {
-    position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
-    background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center",
-    zIndex: 1000
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    background: "rgba(0,0,0,0.55)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 9999,
   },
+
   modal: {
     background: "#f7f2ff",
-    padding: 30,
-    borderRadius: 12,
-    width: 450,
+    padding: 25,
+    borderRadius: 14,
+    width: 420,
     display: "flex",
     flexDirection: "column",
-    gap: 15,
-    boxShadow: "0 6px 20px rgba(0,0,0,0.2)"
+    gap: 12,
+    boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
   },
-  form: { display: "flex", flexDirection: "column", gap: 15 },
+
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+  },
+
   input: {
     padding: 12,
     borderRadius: 8,
@@ -99,7 +166,29 @@ const styles = {
     width: "100%",
     boxSizing: "border-box",
   },
-  buttons: { display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 10 },
-  saveBtn: { padding: "10px 18px", background: "#6A1B9A", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" },
-  cancelBtn: { padding: "10px 18px", background: "#ccc", color: "#000", border: "none", borderRadius: 8, cursor: "pointer" },
+
+  buttons: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: 10,
+    marginTop: 10,
+  },
+
+  saveBtn: {
+    padding: "10px 18px",
+    background: "#6A1B9A",
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
+    cursor: "pointer",
+  },
+
+  cancelBtn: {
+    padding: "10px 18px",
+    background: "#ccc",
+    color: "#000",
+    border: "none",
+    borderRadius: 8,
+    cursor: "pointer",
+  },
 };

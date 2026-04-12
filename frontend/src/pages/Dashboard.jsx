@@ -21,8 +21,8 @@ export default function Dashboard() {
 
   const [showEventModal, setShowEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
-  const [showPrayerModal, setShowPrayerModal] = useState(false);
 
+  const [showPrayerModal, setShowPrayerModal] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0);
 
   const [toast, setToast] = useState({ show: false, message: "" });
@@ -30,7 +30,9 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const isAdmin = userRole === "ADMIN" || userRole === "PASTOR";
 
-  // ⭐ TOAST FIXED
+  /* ================================
+     TOAST
+  ================================= */
   const showToast = (msg) => {
     setToast({ show: true, message: msg });
 
@@ -39,6 +41,9 @@ export default function Dashboard() {
     }, 2500);
   };
 
+  /* ================================
+     MAP
+  ================================= */
   const openMap = (location) => {
     window.open(
       "https://www.google.com/maps/search/?api=1&query=" +
@@ -47,7 +52,9 @@ export default function Dashboard() {
     );
   };
 
-  // 🎨 GRADIENTS (LAVENDER BLUE)
+  /* ================================
+     COLORS
+  ================================= */
   const gradientColors = [
     "#7F7FD5, #86A8E7",
     "#6A11CB, #2575FC",
@@ -59,7 +66,9 @@ export default function Dashboard() {
   const getGradientColor = (idx) =>
     gradientColors[idx % gradientColors.length];
 
-  // 📅 DEFAULT EVENTS
+  /* ================================
+     DEFAULT EVENTS
+  ================================= */
   const getDynamicDefaultEvents = () => {
     const now = new Date();
 
@@ -116,7 +125,9 @@ export default function Dashboard() {
     ];
   };
 
-  // 📡 LOAD DASHBOARD
+  /* ================================
+     LOAD DASHBOARD
+  ================================= */
   const loadDashboard = async () => {
     try {
       const [dashboardRes, eventsRes, prayersRes] = await Promise.all([
@@ -142,7 +153,9 @@ export default function Dashboard() {
     loadDashboard();
   }, []);
 
-  // 📅 FILTER MONTHLY EVENTS
+  /* ================================
+     MONTH EVENTS
+  ================================= */
   const getMonthlyEvents = () => {
     const all = [...getDynamicDefaultEvents(), ...events];
 
@@ -165,12 +178,15 @@ export default function Dashboard() {
       .sort((a, b) => new Date(a.event_date) - new Date(b.event_date));
   };
 
-  // 🗑 DELETE EVENT FIXED
+  /* ================================
+     DELETE EVENT
+  ================================= */
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this event?")) return;
 
     try {
       await API.delete(`/events/${id}`);
+
       setEvents((prev) => prev.filter((e) => e.id !== id));
       showToast("🗑 Event deleted successfully");
     } catch (err) {
@@ -184,39 +200,27 @@ export default function Dashboard() {
     <div style={styles.container}>
       <AdminDashboardHeader userRole={userRole} />
 
-      {/* ⭐ TOAST */}
+      {/* TOAST */}
       {toast.show && <div style={styles.toast}>{toast.message}</div>}
 
       {/* STATS */}
       <div style={styles.grid}>
-        <div
-          style={{ ...styles.card, background: "linear-gradient(135deg,#7F7FD5,#86A8E7)" }}
-          onClick={() => navigate("/members")}
-        >
+        <div style={{ ...styles.card, background: "linear-gradient(135deg,#7F7FD5,#86A8E7)" }} onClick={() => navigate("/members")}>
           <h3>👥 Members</h3>
           <p>{stats.members}</p>
         </div>
 
-        <div
-          style={{ ...styles.card, background: "linear-gradient(135deg,#6A11CB,#2575FC)" }}
-          onClick={() => navigate("/events")}
-        >
+        <div style={{ ...styles.card, background: "linear-gradient(135deg,#6A11CB,#2575FC)" }} onClick={() => navigate("/events")}>
           <h3>📅 Events</h3>
           <p>{stats.events}</p>
         </div>
 
-        <div
-          style={{ ...styles.card, background: "linear-gradient(135deg,#8E2DE2,#4A00E0)" }}
-          onClick={() => navigate("/donations")}
-        >
+        <div style={{ ...styles.card, background: "linear-gradient(135deg,#8E2DE2,#4A00E0)" }} onClick={() => navigate("/donations")}>
           <h3>💳 Donations</h3>
           <p>₹{stats.donations}</p>
         </div>
 
-        <div
-          style={{ ...styles.card, background: "linear-gradient(135deg,#5B86E5,#36D1DC)" }}
-          onClick={() => navigate("/prayers")}
-        >
+        <div style={{ ...styles.card, background: "linear-gradient(135deg,#5B86E5,#36D1DC)" }} onClick={() => navigate("/prayers")}>
           <h3>🙏 Prayers</h3>
           <p>{stats.prayers}</p>
         </div>
@@ -253,19 +257,18 @@ export default function Dashboard() {
             <p>{e.description}</p>
             <p>{new Date(e.event_date).toLocaleString()}</p>
 
-            <p
-              style={styles.location}
-              onClick={() => openMap(e.location)}
-            >
+            <p style={styles.location} onClick={() => openMap(e.location)}>
               📍 {e.location}
             </p>
 
             {isAdmin && (
               <div style={styles.adminRow}>
-                <button onClick={() => {
-                  setEditingEvent(e);
-                  setShowEventModal(true);
-                }}>
+                <button
+                  onClick={() => {
+                    setEditingEvent(e);
+                    setShowEventModal(true);
+                  }}
+                >
                   ✏️ Edit
                 </button>
 
@@ -278,29 +281,43 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* QUICK ACTIONS (NOT REMOVED) */}
+      {/* QUICK ACTIONS */}
       <div style={styles.section}>
         <h3>Quick Actions</h3>
 
         <div style={styles.actions}>
           {isAdmin ? (
             <>
-              <button style={styles.button} onClick={() => setShowEventModal(true)}>Add Event</button>
-              <button style={styles.button} onClick={() => navigate("/members")}>View Members</button>
-              <button style={styles.button} onClick={() => navigate("/donations")}>View Donations</button>
-              <button style={styles.button} onClick={() => setShowPrayerModal(true)}>Raise Prayer Request</button>
-              <button style={styles.button} onClick={() => navigate("/prayers")}>Accept Prayer Requests</button>
+              <button style={styles.button} onClick={() => setShowEventModal(true)}>
+                Add Event
+              </button>
+              <button style={styles.button} onClick={() => navigate("/members")}>
+                View Members
+              </button>
+              <button style={styles.button} onClick={() => navigate("/donations")}>
+                View Donations
+              </button>
+              <button style={styles.button} onClick={() => setShowPrayerModal(true)}>
+                Raise Prayer Request
+              </button>
+              <button style={styles.button} onClick={() => navigate("/prayers")}>
+                Accept Prayer Requests
+              </button>
             </>
           ) : (
             <>
-              <button style={styles.button} onClick={() => setShowPrayerModal(true)}>Raise Prayer Request</button>
-              <button style={styles.button} onClick={() => navigate("/donations")}>Donate</button>
+              <button style={styles.button} onClick={() => setShowPrayerModal(true)}>
+                Raise Prayer Request
+              </button>
+              <button style={styles.button} onClick={() => navigate("/donations")}>
+                Donate
+              </button>
             </>
           )}
         </div>
       </div>
 
-      {/* MODALS */}
+      {/* EVENT MODAL (CLICK OUTSIDE CLOSE FIXED INSIDE COMPONENT) */}
       {showEventModal && (
         <AddEventModal
           event={editingEvent}
@@ -312,11 +329,12 @@ export default function Dashboard() {
             loadDashboard();
             setShowEventModal(false);
             setEditingEvent(null);
-            showToast("🎉 Event saved successfully");
+            showToast(editingEvent ? "✏️ Event updated" : "🎉 Event created");
           }}
         />
       )}
 
+      {/* PRAYER MODAL */}
       {showPrayerModal && (
         <RaisePrayerModal
           onClose={() => setShowPrayerModal(false)}
@@ -330,7 +348,9 @@ export default function Dashboard() {
   );
 }
 
-/* STYLES */
+/* ================================
+   STYLES
+================================ */
 const styles = {
   container: { padding: 30, minHeight: "100vh", background: "#E6E6FA" },
 
