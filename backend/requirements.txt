@@ -17,4 +17,8 @@ jwt
 passlib
 pydantic[email]
 websockets
-"uvicorn[standard]" websockets
+# "uvicorn[standard]" websockets
+qrcode[pil]
+Pillow
+pyzbar
+opencv-python

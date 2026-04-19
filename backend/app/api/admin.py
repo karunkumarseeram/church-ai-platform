@@ -1,13 +1,33 @@
 # app/api/admin.py
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
-from app.models.chr_models import User, RoleEnum
+from app.models.chr_models import User, RoleEnum, AdminActionLog
 from app.core.dependencies import get_db, admin_required
+
 router = APIRouter(prefix="/admin", tags=["admin"])
 
+
+def log_admin_action(
+    db: Session,
+    admin_id: str,
+    action: str,
+    target_user_id: str = None,
+    location: str = None,
+    ip_address: str = None
+):
+    """Log admin actions for audit trail"""
+    log_entry = AdminActionLog(
+        admin_id=admin_id,
+        target_user_id=target_user_id,
+        action=action,
+        location=location,
+        ip_address=ip_address
+    )
+    db.add(log_entry)
+    db.commit()
+
+
 # ✅ List pending users (for notifications)
-# List pending users
-# app/api/admin.py
 
 
 # ✅ Admin-only members list
@@ -55,23 +75,43 @@ def list_members(
 
 # Approve user
 @router.put("/members/{user_id}/approve")
-def approve_user(user_id: str, db: Session = Depends(get_db), admin=Depends(admin_required)):
+def approve_user(user_id: str, request: Request, db: Session = Depends(get_db), admin=Depends(admin_required)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         return {"error": "User not found"}
     user.is_approved = True
     user.role = RoleEnum.MEMBER  # default role when approved
     db.commit()
+
+    # Log the admin action
+    log_admin_action(
+        db=db,
+        admin_id=str(admin.id),
+        action=f"Approved user: {user.name} ({user.email})",
+        target_user_id=user_id,
+        ip_address=request.client.host if request.client else None
+    )
+
     return {"message": f"{user.name} approved successfully"}
 
 # Revoke user
 @router.put("/members/{user_id}/revoke")
-def revoke_user(user_id: str, db: Session = Depends(get_db), admin=Depends(admin_required)):
+def revoke_user(user_id: str, request: Request, db: Session = Depends(get_db), admin=Depends(admin_required)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         return {"error": "User not found"}
     user.is_approved = False
     db.commit()
+
+    # Log the admin action
+    log_admin_action(
+        db=db,
+        admin_id=str(admin.id),
+        action=f"Revoked user access: {user.name} ({user.email})",
+        target_user_id=user_id,
+        ip_address=request.client.host if request.client else None
+    )
+
     return {"message": f"{user.name} access revoked"}
 
 # List pending users for bell notifications

@@ -1,13 +1,30 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.models.chr_models import PrayerRequest, User
+from app.models.chr_models import PrayerRequest, User, AdminActionLog
 from app.schemas.prayer import PrayerRequestCreate
 from app.core.security import get_current_user
 from typing import List
 import uuid
 
 router = APIRouter(prefix="/prayers", tags=["Prayers"])
+
+
+def log_admin_action(
+    db: Session,
+    admin_id: str,
+    action: str,
+    target_id: str = None,
+    ip_address: str = None
+):
+    """Log admin actions for audit trail"""
+    log_entry = AdminActionLog(
+        admin_id=admin_id,
+        action=action,
+        ip_address=ip_address
+    )
+    db.add(log_entry)
+    db.commit()
 
 # =========================
 # CREATE PRAYER (USER)
@@ -70,6 +87,7 @@ def get_all_prayers(
 @router.put("/{id}/approve")
 def approve_prayer(
     id: uuid.UUID,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -83,6 +101,14 @@ def approve_prayer(
 
     prayer.is_approved = True
     db.commit()
+
+    # Log the admin action
+    log_admin_action(
+        db=db,
+        admin_id=str(current_user.id),
+        action=f"Approved prayer request from: {prayer.name}",
+        ip_address=request.client.host if request.client else None
+    )
 
     return {"message": "Approved"}
 

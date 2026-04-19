@@ -1,21 +1,24 @@
 import { useContext, useState, useEffect } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, Typography, IconButton } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from "@mui/icons-material/LightMode";
 
-export default function Navbar() {
+export default function Navbar({ toggleTheme, mode }) {
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const theme = useTheme();
 
   const [verse, setVerse] = useState('"Loading verse..."');
-  const [verseColor, setVerseColor] = useState("#98FB98"); // initial green
+  const [verseColor, setVerseColor] = useState("#98FB98");
 
   const handleLogout = () => {
     logout();
     navigate("/");
   };
 
-  // Rotating verses daily (hardcoded example, replace with API if needed)
   const dailyVerses = [
     { text: '"Go into all the world and preach the gospel to all creation." — Mark 16:15', color: "#98FB98" },
     { text: '"For God so loved the world, that he gave his only Son." — John 3:16', color: "#7FFFD4" },
@@ -25,7 +28,6 @@ export default function Navbar() {
   ];
 
   useEffect(() => {
-    // Rotate verse based on day of month
     const day = new Date().getDate();
     const index = day % dailyVerses.length;
     setVerse(dailyVerses[index].text);
@@ -40,10 +42,15 @@ export default function Navbar() {
         alignItems: "center",
         height: 80,
         px: 3,
-        background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
-        color: "#fff",
+        background:
+          theme.palette.mode === "dark"
+            ? "linear-gradient(135deg, #0f2027, #203a43, #2c5364)"
+            : "linear-gradient(135deg, #e0f7fa, #ffffff, #e3f2fd)",
+        color: theme.palette.text.primary,
+        fontFamily: "'Poppins', 'Segoe UI', sans-serif",
         boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
         position: "relative",
+        transition: "all 0.3s ease",
       }}
     >
       {/* Scrolling Container */}
@@ -52,7 +59,7 @@ export default function Navbar() {
           position: "relative",
           overflow: "hidden",
           whiteSpace: "nowrap",
-          width: "75%",
+          width: "70%",
           "&::before, &::after": {
             content: '""',
             position: "absolute",
@@ -63,11 +70,11 @@ export default function Navbar() {
           },
           "&::before": {
             left: 0,
-            background: "linear-gradient(to right, #0f2027 20%, transparent)",
+            background: `linear-gradient(to right, ${theme.palette.background.default} 20%, transparent)`,
           },
           "&::after": {
             right: 0,
-            background: "linear-gradient(to left, #2c5364 20%, transparent)",
+            background: `linear-gradient(to left, ${theme.palette.background.default} 20%, transparent)`,
           },
         }}
       >
@@ -82,13 +89,13 @@ export default function Navbar() {
             },
           }}
         >
-          {/* Church Title + "We Proclaim" */}
+          {/* Church Title */}
           <Typography
             component="span"
             sx={{
-              fontSize: "1.4rem",
-              fontWeight: 700,
-              fontFamily: "'Cinzel', serif",
+              fontSize: "1.45rem",
+              fontWeight: 800,
+              fontFamily: "'Cinzel Decorative', cursive",
               letterSpacing: "2px",
               background:
                 "linear-gradient(90deg, #FFD700, #FFB347, #FF416C, #FF4B2B, #FFD700)",
@@ -99,7 +106,7 @@ export default function Navbar() {
               textShadow: "0 0 10px rgba(255,215,0,0.6)",
             }}
           >
-            Faith Fellowship Temple — With HIM  {" "}
+            Faith Fellowship Temple — With HIM{" "}
             <Box
               component="span"
               sx={{
@@ -126,7 +133,8 @@ export default function Navbar() {
             sx={{
               ml: 5,
               fontSize: "1rem",
-              fontFamily: "'Playfair Display', serif",
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: 500,
               fontStyle: "italic",
               color: verseColor,
               letterSpacing: "0.5px",
@@ -137,28 +145,37 @@ export default function Navbar() {
         </Box>
       </Box>
 
-      {/* Logout */}
-      <Button
-        onClick={handleLogout}
-        sx={{
-          background: "linear-gradient(135deg, #ff416c, #ff4b2b)",
-          color: "#fff",
-          borderRadius: "25px",
-          px: 3,
-          py: 1,
-          fontWeight: "bold",
-          fontFamily: "'Poppins', sans-serif",
-          textTransform: "none",
-          boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
-          transition: "0.3s",
-          "&:hover": {
-            transform: "scale(1.08)",
-            opacity: 0.9,
-          },
-        }}
-      >
-        Logout
-      </Button>
+      {/* Right Controls */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        {/* Theme Toggle */}
+        <IconButton onClick={toggleTheme} sx={{ color: theme.palette.text.primary }}>
+          {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
+        </IconButton>
+
+        {/* Logout */}
+        <Button
+          onClick={handleLogout}
+          sx={{
+            background: "linear-gradient(135deg, #ff416c, #ff4b2b)",
+            color: "#fff",
+            borderRadius: "25px",
+            px: 3,
+            py: 1,
+            fontWeight: 700,
+            fontFamily: "'Inter', sans-serif",
+            letterSpacing: "0.5px",
+            textTransform: "none",
+            boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
+            transition: "0.3s",
+            "&:hover": {
+              transform: "scale(1.08)",
+              opacity: 0.9,
+            },
+          }}
+        >
+          Logout
+        </Button>
+      </Box>
 
       <style>
         {`

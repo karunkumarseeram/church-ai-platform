@@ -1,5 +1,7 @@
 import { Box, List, ListItem, ListItemText } from "@mui/material";
 import { NavLink } from "react-router-dom";
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
 
 // Icons
 import DashboardIcon from "@mui/icons-material/Dashboard";
@@ -8,16 +10,28 @@ import EventIcon from "@mui/icons-material/Event";
 import VolunteerActivismIcon from "@mui/icons-material/VolunteerActivism";
 import LiveTvIcon from "@mui/icons-material/LiveTv";
 import SelfImprovementIcon from "@mui/icons-material/SelfImprovement";
-const menuItems = [
-  { name: "Dashboard", path: "/dashboard", icon: <DashboardIcon /> },
-  { name: "Members", path: "/members", icon: <PeopleIcon /> },
-  { name: "Events", path: "/events", icon: <EventIcon /> },
-  { name: "Donations", path: "/donations", icon: <VolunteerActivismIcon /> },
-  { name: "Prayer Requests", path: "/prayers", icon: <SelfImprovementIcon /> },
-  { name: "Live", path: "/live", icon: <LiveTvIcon /> },
-];
-
+import MenuBookIcon from "@mui/icons-material/MenuBook";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 export default function Sidebar() {
+  const { userRole } = useContext(AuthContext);
+
+  const menuItems = [
+    { name: "Dashboard", path: "/dashboard", icon: <DashboardIcon /> },
+    { name: "Members", path: "/members", icon: <PeopleIcon />, roles: ["ADMIN"] },
+    { name: "Events", path: "/events", icon: <EventIcon /> },
+    { name: "Donations", path: "/donations", icon: <VolunteerActivismIcon /> },
+    { name: "Scanner", path: "/scanner", icon: <QrCodeScannerIcon />, roles: ["ADMIN", "PASTOR"] },
+    { name: "Bible", path: "/bible", icon: <MenuBookIcon /> },
+    { name: "Bible Manager", path: "/bible-manager", icon: <AdminPanelSettingsIcon />, roles: ["ADMIN"] },
+    { name: "Prayer Requests", path: "/prayers", icon: <SelfImprovementIcon /> },
+    { name: "Live", path: "/live", icon: <LiveTvIcon /> },
+  ];
+
+  // Filter menu items based on user role
+  const filteredMenuItems = menuItems.filter(item =>
+    !item.roles || item.roles.includes(userRole)
+  );
   return (
     <Box
       sx={{
@@ -78,7 +92,7 @@ export default function Sidebar() {
 
       {/* 📋 Menu Items */}
       <List sx={{ px: 2 }}>
-        {menuItems.map((item) => (
+        {filteredMenuItems.map((item) => (
           <ListItem
             key={item.name}
             component={NavLink}
