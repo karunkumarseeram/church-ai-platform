@@ -269,15 +269,15 @@ async def get_all_verses(
     verses = query.offset(skip).limit(limit).all()
 
     return [
-        {
-            "id": str(v.id),
-            "book": v.book,
-            "chapter": v.chapter,
-            "verse_number": v.verse_number,
-            "text_en": v.text_en,
-            "text_te": v.text_te,
-            "is_daily": v.is_daily,
-            "created_at": v.created_at.isoformat() if v.created_at else None,
-        }
-        for v in verses
-    ]
+    {
+        "id": str(v.id),
+        "book": v.book,
+        "chapter": v.chapter,
+        "verse_number": v.verse_number,
+        "text_en": v.text_en,
+        "text_te": v.text_te if v.text_te else "",
+        "is_daily": v.is_daily,
+        "created_at": v.created_at.isoformat() if v.created_at else None,
+    }
+    for v in verses
+]
