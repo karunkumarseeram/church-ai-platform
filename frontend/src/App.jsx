@@ -16,6 +16,7 @@ import ServiceDetails from "./pages/ServiceDetails";
 import AddEvent from "./pages/AddEvent";
 import Bible from "./pages/Bible";
 import BibleVerseManager from "./pages/BibleVerseManager";
+import Scanner from "./pages/Scanner";
 import Layout from "./components/Layout";
 import Prayers from "./pages/Prayers";
 
@@ -158,6 +159,17 @@ function App() {
                 <PrivateRoute>
                   <Layout mode={mode} toggleTheme={toggleTheme}>
                     <Donations />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/scanner"
+              element={
+                <PrivateRoute allowedRoles={["ADMIN", "PASTOR"]}>
+                  <Layout mode={mode} toggleTheme={toggleTheme}>
+                    <Scanner />
                   </Layout>
                 </PrivateRoute>
               }

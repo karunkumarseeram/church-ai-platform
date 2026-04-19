@@ -12,6 +12,7 @@ import LiveTvIcon from "@mui/icons-material/LiveTv";
 import SelfImprovementIcon from "@mui/icons-material/SelfImprovement";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 export default function Sidebar() {
   const { userRole } = useContext(AuthContext);
 
@@ -20,6 +21,7 @@ export default function Sidebar() {
     { name: "Members", path: "/members", icon: <PeopleIcon />, roles: ["ADMIN"] },
     { name: "Events", path: "/events", icon: <EventIcon /> },
     { name: "Donations", path: "/donations", icon: <VolunteerActivismIcon /> },
+    { name: "Scanner", path: "/scanner", icon: <QrCodeScannerIcon />, roles: ["ADMIN", "PASTOR"] },
     { name: "Bible", path: "/bible", icon: <MenuBookIcon /> },
     { name: "Bible Manager", path: "/bible-manager", icon: <AdminPanelSettingsIcon />, roles: ["ADMIN"] },
     { name: "Prayer Requests", path: "/prayers", icon: <SelfImprovementIcon /> },

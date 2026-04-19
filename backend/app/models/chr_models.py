@@ -93,6 +93,21 @@ class Event(Base, BaseModel):
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
 
 
+# ================= EVENT ATTENDANCE =================
+class EventAttendance(Base, BaseModel):
+    __tablename__ = "event_attendance"
+
+    event_id = Column(UUID(as_uuid=True), ForeignKey("events.id"), nullable=False)
+    member_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    checked_in_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    check_in_time = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    event = relationship("Event", backref="attendance")
+    member = relationship("User", foreign_keys=[member_id], backref="event_attendance")
+    checked_in_by_user = relationship("User", foreign_keys=[checked_in_by], backref="checked_in_attendance")
+
+
 # ================= DONATIONS =================
 class Donation(Base, BaseModel):
     __tablename__ = "donations"

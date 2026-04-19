@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     RAZORPAY_KEY: Optional[str] = None  # <- optional now
     RAZORPAY_SECRET: Optional[str] = None  # <- optional now
 
+    # ================= BANK DETAILS =================
+    BANK_NAME: Optional[str] = None
+    ACCOUNT_NUMBER: Optional[str] = None
+    IFSC: Optional[str] = None
+    UPI: Optional[str] = None
+
     # ================= Pydantic Config =================
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env"),

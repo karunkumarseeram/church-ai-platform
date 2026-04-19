@@ -224,10 +224,12 @@ export default function Dashboard() {
 
       {/* STATS */}
       <div style={styles.grid}>
-        <div style={{ ...styles.card, background: "linear-gradient(135deg,#7F7FD5,#86A8E7)", transform: hoveredCard === 'members' ? "scale(1.05)" : "scale(1)" }} onClick={() => navigate("/members")} onMouseEnter={() => setHoveredCard('members')} onMouseLeave={() => setHoveredCard(null)}>
-          <h3 style={styles.cardTitle}>👥 Members</h3>
-          <p style={styles.cardValue}>{stats.members}</p>
-        </div>
+        {isAdmin && (
+          <div style={{ ...styles.card, background: "linear-gradient(135deg,#7F7FD5,#86A8E7)", transform: hoveredCard === 'members' ? "scale(1.05)" : "scale(1)" }} onClick={() => navigate("/members")} onMouseEnter={() => setHoveredCard('members')} onMouseLeave={() => setHoveredCard(null)}>
+            <h3 style={styles.cardTitle}>👥 Members</h3>
+            <p style={styles.cardValue}>{stats.members}</p>
+          </div>
+        )}
 
         <div style={{ ...styles.card, background: "linear-gradient(135deg,#6A11CB,#2575FC)", transform: hoveredCard === 'events' ? "scale(1.05)" : "scale(1)" }} onClick={() => navigate("/events")} onMouseEnter={() => setHoveredCard('events')} onMouseLeave={() => setHoveredCard(null)}>
           <h3 style={styles.cardTitle}>📅 Events</h3>
