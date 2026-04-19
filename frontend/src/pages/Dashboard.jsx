@@ -18,6 +18,9 @@ export default function Dashboard() {
 
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingBible, setLoadingBible] = useState(true);
+  const [bibleVerse, setBibleVerse] = useState(null);
+  const [dailyVerses, setDailyVerses] = useState([]);
 
   const [showEventModal, setShowEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
@@ -26,6 +29,9 @@ export default function Dashboard() {
   const [monthOffset, setMonthOffset] = useState(0);
 
   const [toast, setToast] = useState({ show: false, message: "" });
+
+  const [hoveredCard, setHoveredCard] = useState(null);
+  const [hoveredEvent, setHoveredEvent] = useState(null);
 
   const navigate = useNavigate();
   const isAdmin = userRole === "ADMIN" || userRole === "PASTOR";
@@ -151,7 +157,20 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadDashboard();
+    loadBibleDaily();
   }, []);
+
+  const loadBibleDaily = async () => {
+    try {
+      const res = await API.get("/bible/daily");
+      setBibleVerse(res.data.verse_of_the_day);
+      setDailyVerses(res.data.verses || []);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setLoadingBible(false);
+    }
+  };
 
   /* ================================
      MONTH EVENTS
@@ -205,31 +224,33 @@ export default function Dashboard() {
 
       {/* STATS */}
       <div style={styles.grid}>
-        <div style={{ ...styles.card, background: "linear-gradient(135deg,#7F7FD5,#86A8E7)" }} onClick={() => navigate("/members")}>
-          <h3>👥 Members</h3>
-          <p>{stats.members}</p>
+        <div style={{ ...styles.card, background: "linear-gradient(135deg,#7F7FD5,#86A8E7)", transform: hoveredCard === 'members' ? "scale(1.05)" : "scale(1)" }} onClick={() => navigate("/members")} onMouseEnter={() => setHoveredCard('members')} onMouseLeave={() => setHoveredCard(null)}>
+          <h3 style={styles.cardTitle}>👥 Members</h3>
+          <p style={styles.cardValue}>{stats.members}</p>
         </div>
 
-        <div style={{ ...styles.card, background: "linear-gradient(135deg,#6A11CB,#2575FC)" }} onClick={() => navigate("/events")}>
-          <h3>📅 Events</h3>
-          <p>{stats.events}</p>
+        <div style={{ ...styles.card, background: "linear-gradient(135deg,#6A11CB,#2575FC)", transform: hoveredCard === 'events' ? "scale(1.05)" : "scale(1)" }} onClick={() => navigate("/events")} onMouseEnter={() => setHoveredCard('events')} onMouseLeave={() => setHoveredCard(null)}>
+          <h3 style={styles.cardTitle}>📅 Events</h3>
+          <p style={styles.cardValue}>{stats.events}</p>
         </div>
 
-        <div style={{ ...styles.card, background: "linear-gradient(135deg,#8E2DE2,#4A00E0)" }} onClick={() => navigate("/donations")}>
-          <h3>💳 Donations</h3>
-          <p>₹{stats.donations}</p>
+        <div style={{ ...styles.card, background: "linear-gradient(135deg,#8E2DE2,#4A00E0)", transform: hoveredCard === 'donations' ? "scale(1.05)" : "scale(1)" }} onClick={() => navigate("/donations")} onMouseEnter={() => setHoveredCard('donations')} onMouseLeave={() => setHoveredCard(null)}>
+          <h3 style={styles.cardTitle}>💳 Donations</h3>
+          <p style={styles.cardValue}>₹{stats.donations}</p>
         </div>
 
-        <div style={{ ...styles.card, background: "linear-gradient(135deg,#5B86E5,#36D1DC)" }} onClick={() => navigate("/prayers")}>
-          <h3>🙏 Prayers</h3>
-          <p>{stats.prayers}</p>
+        <div style={{ ...styles.card, background: "linear-gradient(135deg,#5B86E5,#36D1DC)", transform: hoveredCard === 'prayers' ? "scale(1.05)" : "scale(1)" }} onClick={() => navigate("/prayers")} onMouseEnter={() => setHoveredCard('prayers')} onMouseLeave={() => setHoveredCard(null)}>
+          <h3 style={styles.cardTitle}>🙏 Prayers</h3>
+          <p style={styles.cardValue}>{stats.prayers}</p>
         </div>
       </div>
 
       {/* MONTH NAV */}
       <div style={styles.monthNav}>
-        <button onClick={() => setMonthOffset(monthOffset - 1)}>◀</button>
-        <h3>
+        <button style={styles.monthNavButton} onClick={() => setMonthOffset(monthOffset - 1)}>
+          ◀
+        </button>
+        <h3 style={styles.monthNavLabel}>
           {new Date(
             new Date().getFullYear(),
             new Date().getMonth() + monthOffset
@@ -238,11 +259,46 @@ export default function Dashboard() {
             year: "numeric",
           })}
         </h3>
-        <button onClick={() => setMonthOffset(monthOffset + 1)}>▶</button>
+        <button style={styles.monthNavButton} onClick={() => setMonthOffset(monthOffset + 1)}>
+          ▶
+        </button>
+      </div>
+
+      <div style={styles.bibleSection}>
+        <div style={styles.bibleHeader}>
+          <div>
+            <h2 style={styles.bibleTitle}>📖 Bible of the Day</h2>
+            <p style={styles.bibleNote}>
+              Daily verses and a quick path to the full online Bible reader.
+            </p>
+          </div>
+          <button style={styles.openBibleButton} onClick={() => navigate("/bible")}>Open Bible Reader</button>
+        </div>
+
+        {loadingBible ? (
+          <p style={styles.loadingBible}>Loading Bible devotion...</p>
+        ) : (
+          <div style={styles.bibleGrid}>
+            {bibleVerse && (
+              <div style={styles.dailyVerseCard}>
+                <span style={styles.cardLabel}>Verse of the Day</span>
+                <p style={styles.dailyVerseText}>{bibleVerse.text}</p>
+                <p style={styles.dailyVerseRef}>{bibleVerse.reference}</p>
+              </div>
+            )}
+
+            {dailyVerses.slice(0, 3).map((verse) => (
+              <div key={verse.reference} style={styles.smallVerseCard}>
+                <p style={styles.smallVerseText}>{verse.text}</p>
+                <p style={styles.smallVerseRef}>{verse.reference}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* EVENTS */}
-      <h2>📅 Upcoming Events</h2>
+      <h2 style={{ background: "#fff", padding: "10px 15px", borderRadius: 8, display: "inline-block", boxShadow: "0 2px 5px rgba(0,0,0,0.1)", color: "#000" }}>📅 Upcoming Events</h2>
 
       <div style={styles.eventSection}>
         {getMonthlyEvents().map((e, idx) => (
@@ -251,11 +307,14 @@ export default function Dashboard() {
             style={{
               ...styles.eventCard,
               background: `linear-gradient(135deg, ${getGradientColor(idx)})`,
+              transform: hoveredEvent === e.id ? "scale(1.05)" : "scale(1)",
             }}
+            onMouseEnter={() => setHoveredEvent(e.id)}
+            onMouseLeave={() => setHoveredEvent(null)}
           >
-            <h4>{e.title}</h4>
-            <p>{e.description}</p>
-            <p>{new Date(e.event_date).toLocaleString()}</p>
+            <h4 style={styles.eventTitle}>{e.title}</h4>
+            <p style={styles.eventDescription}>{e.description}</p>
+            <p style={styles.eventMeta}>{new Date(e.event_date).toLocaleString()}</p>
 
             <p style={styles.location} onClick={() => openMap(e.location)}>
               📍 {e.location}
@@ -281,6 +340,12 @@ export default function Dashboard() {
         ))}
       </div>
 
+      <div style={styles.viewMoreContainer}>
+        <button style={styles.viewMoreButton} onClick={() => navigate("/events")}>
+          View More Events
+        </button>
+      </div>
+
       {/* QUICK ACTIONS */}
       <div style={styles.section}>
         <h3>Quick Actions</h3>
@@ -297,6 +362,9 @@ export default function Dashboard() {
               <button style={styles.button} onClick={() => navigate("/donations")}>
                 View Donations
               </button>
+              <button style={styles.button} onClick={() => navigate("/bible")}>
+                Open Bible Reader
+              </button>
               <button style={styles.button} onClick={() => setShowPrayerModal(true)}>
                 Raise Prayer Request
               </button>
@@ -311,6 +379,9 @@ export default function Dashboard() {
               </button>
               <button style={styles.button} onClick={() => navigate("/donations")}>
                 Donate
+              </button>
+              <button style={styles.button} onClick={() => navigate("/bible")}>
+                Open Bible Reader
               </button>
             </>
           )}
@@ -363,37 +434,96 @@ const styles = {
     borderRadius: 12,
     cursor: "pointer",
     boxShadow: "0 10px 25px rgba(0,0,0,0.25)",
+    transition: "transform 0.3s, box-shadow 0.3s",
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
   },
 
   monthNav: {
     display: "flex",
+    alignItems: "center",
     justifyContent: "space-between",
+    gap: 10,
     margin: "15px 0",
+    padding: "14px 18px",
+    borderRadius: 14,
+    background: "linear-gradient(135deg,#5B86E5,#6A11CB,#8E2DE2)",
+    boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+  },
+
+  monthNavButton: {
+    padding: "10px 14px",
+    borderRadius: 10,
+    border: "1px solid rgba(255,255,255,0.35)",
+    background: "rgba(255,255,255,0.15)",
+    color: "#fff",
+    cursor: "pointer",
+    fontSize: "16px",
+    transition: "background 0.2s, transform 0.2s",
+  },
+
+  monthNavLabel: {
+    margin: 0,
+    color: "#fff",
+    fontWeight: 700,
+    fontSize: "1rem",
   },
 
   eventSection: {
-    background: "linear-gradient(135deg,#F3E5F5,#E1BEE7)",
+    background: "#fff",
     padding: 15,
     borderRadius: 12,
+    boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
   },
 
   eventCard: {
-    padding: 18,
-    marginBottom: 10,
-    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
+    borderRadius: 18,
     color: "#fff",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.25)",
+    boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+    fontSize: "14px",
+    textAlign: "center",
+    transition: "transform 0.3s",
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+    minHeight: 170,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+  },
+
+  eventTitle: {
+    fontSize: "18px",
+    fontWeight: 800,
+    textTransform: "uppercase",
+    letterSpacing: "0.8px",
+    margin: "0 0 8px",
+  },
+
+  eventDescription: {
+    margin: "0 0 10px",
+    opacity: 0.95,
+    fontSize: "14px",
+    fontStyle: "italic",
+    lineHeight: 1.4,
+  },
+
+  eventMeta: {
+    margin: "0 0 10px",
+    fontSize: "13px",
+    opacity: 0.9,
   },
 
   location: {
     cursor: "pointer",
     textDecoration: "underline",
+    fontWeight: "bold",
   },
 
   adminRow: {
     marginTop: 10,
     display: "flex",
     gap: 10,
+    justifyContent: "space-between",
   },
 
   button: {
@@ -408,6 +538,145 @@ const styles = {
     display: "flex",
     gap: 10,
     flexWrap: "wrap",
+  },
+
+  viewMoreContainer: {
+    textAlign: "center",
+    marginTop: 10,
+  },
+
+  cardTitle: {
+    fontSize: "18px",
+    fontWeight: 700,
+    letterSpacing: "0.8px",
+    textTransform: "uppercase",
+    margin: 0,
+  },
+
+  cardValue: {
+    fontSize: "32px",
+    fontWeight: 900,
+    margin: "8px 0 0",
+  },
+
+  viewMoreButton: {
+    padding: "8px 16px",
+    background: "#6A1B9A",
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
+  },
+
+  bibleSection: {
+    background: "#fff",
+    padding: 24,
+    borderRadius: 20,
+    boxShadow: "0 18px 40px rgba(15, 23, 42, 0.08)",
+    marginBottom: 24,
+  },
+
+  bibleHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+    marginBottom: 20,
+    flexWrap: "wrap",
+  },
+
+  bibleTitle: {
+    margin: 0,
+    fontSize: "1.45rem",
+    fontWeight: 800,
+    color: "#111827",
+  },
+
+  bibleNote: {
+    margin: "8px 0 0",
+    color: "#475569",
+    maxWidth: 620,
+  },
+
+  openBibleButton: {
+    padding: "12px 18px",
+    background: "linear-gradient(135deg, #7F7FD5, #86A8E7)",
+    border: "none",
+    borderRadius: 14,
+    color: "#fff",
+    fontWeight: 700,
+    cursor: "pointer",
+    transition: "transform 0.2s, box-shadow 0.2s",
+  },
+
+  bibleGrid: {
+    display: "grid",
+    gridTemplateColumns: "1.5fr 1fr 1fr",
+    gap: 18,
+  },
+
+  dailyVerseCard: {
+    background: "linear-gradient(135deg, #8C46FF, #4A64E8)",
+    color: "#fff",
+    borderRadius: 20,
+    padding: 24,
+    minHeight: 220,
+    boxShadow: "0 16px 35px rgba(74, 71, 128, 0.16)",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+  },
+
+  cardLabel: {
+    display: "inline-block",
+    marginBottom: 16,
+    fontSize: "0.85rem",
+    fontWeight: 700,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    opacity: 0.9,
+  },
+
+  dailyVerseText: {
+    margin: 0,
+    fontSize: "1.05rem",
+    lineHeight: 1.75,
+    fontWeight: 600,
+    letterSpacing: "0.01em",
+  },
+
+  dailyVerseRef: {
+    marginTop: 18,
+    color: "#EDEBFF",
+    fontWeight: 700,
+  },
+
+  smallVerseCard: {
+    background: "#F8FAFC",
+    borderRadius: 18,
+    padding: 18,
+    border: "1px solid #E2E8F0",
+    minHeight: 220,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+  },
+
+  smallVerseText: {
+    margin: 0,
+    color: "#0F172A",
+    lineHeight: 1.7,
+    fontSize: "0.98rem",
+  },
+
+  smallVerseRef: {
+    marginTop: 18,
+    color: "#4F46E5",
+    fontWeight: 700,
+  },
+
+  loadingBible: {
+    color: "#475569",
+    fontStyle: "italic",
   },
 
   toast: {

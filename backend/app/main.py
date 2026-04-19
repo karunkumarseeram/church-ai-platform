@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.core.init_dbse import init_db
-from app.api import auth, events, dashboard,admin,prayers
+from app.api import auth, events, dashboard, admin, prayers, bible
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="FFT Church API")
@@ -25,6 +25,7 @@ app.include_router(events.router)
 app.include_router(dashboard.router)
 app.include_router(admin.router)
 app.include_router(prayers.router)
+app.include_router(bible.router)
 
 # 🔹 Initialize database on startup
 # @app.on_event("startup")

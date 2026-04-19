@@ -134,7 +134,7 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     padding: "20px 30px",
-    background: "linear-gradient(90deg, #E6E6FA, #B3C6FF, #6A5ACD)",
+    background: "linear-gradient(90deg, #6A5ACD, #B3C6FF, #E6E6FA)",
     borderRadius: 10,
     color: "#fff",
     fontFamily: "'Cinzel', serif",

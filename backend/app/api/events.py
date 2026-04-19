@@ -1,8 +1,8 @@
 # api/events.py
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.models.chr_models import Event
+from app.models.chr_models import Event, AdminActionLog
 from app.schemas.event import EventCreate, EventOut
 from app.core.dependencies import admin_required,get_current_user
 import uuid
@@ -10,10 +10,28 @@ import uuid
 router = APIRouter(prefix="/events", tags=["Events"])
 
 
+def log_admin_action(
+    db: Session,
+    admin_id: str,
+    action: str,
+    target_id: str = None,
+    ip_address: str = None
+):
+    """Log admin actions for audit trail"""
+    log_entry = AdminActionLog(
+        admin_id=admin_id,
+        action=action,
+        ip_address=ip_address
+    )
+    db.add(log_entry)
+    db.commit()
+
+
 # ➕ CREATE
 @router.post("", response_model=EventOut)
 def create_event(
     event: EventCreate,
+    request: Request,
     db: Session = Depends(get_db),
     user=Depends(admin_required),
 ):
@@ -29,6 +47,15 @@ def create_event(
     db.add(new_event)
     db.commit()
     db.refresh(new_event)
+
+    # Log the admin action
+    log_admin_action(
+        db=db,
+        admin_id=str(user.id),
+        action=f"Created event: {event.title}",
+        ip_address=request.client.host if request.client else None
+    )
+
     return new_event
 
 
@@ -43,6 +70,7 @@ def get_events(db: Session = Depends(get_db)):
 def update_event(
     event_id: str,
     updated: EventCreate,
+    request: Request,
     db: Session = Depends(get_db),
     user=Depends(admin_required),
 ):
@@ -58,6 +86,15 @@ def update_event(
 
     db.commit()
     db.refresh(event)
+
+    # Log the admin action
+    log_admin_action(
+        db=db,
+        admin_id=str(user.id),
+        action=f"Updated event: {event.title}",
+        ip_address=request.client.host if request.client else None
+    )
+
     return event
 
 
@@ -65,6 +102,7 @@ def update_event(
 @router.delete("/{event_id}")
 def delete_event(
     event_id: str,
+    request: Request,
     db: Session = Depends(get_db),
     user=Depends(admin_required),
 ):
@@ -73,7 +111,16 @@ def delete_event(
     if not event:
         raise HTTPException(404, "Event not found")
 
+    event_title = event.title  # Store before deletion
     db.delete(event)
     db.commit()
+
+    # Log the admin action
+    log_admin_action(
+        db=db,
+        admin_id=str(user.id),
+        action=f"Deleted event: {event_title}",
+        ip_address=request.client.host if request.client else None
+    )
 
     return {"message": "Event deleted"}

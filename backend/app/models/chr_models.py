@@ -128,6 +128,28 @@ class Verse(Base, BaseModel):
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
 
 
+# ================= BIBLE VERSES =================
+class BibleVerse(Base, BaseModel):
+    __tablename__ = "bible_verses"
+
+    book = Column(String, nullable=False, index=True)
+    chapter = Column(Integer, nullable=False)
+    verse_number = Column(Integer, nullable=False)
+
+    text_en = Column(String, nullable=False)  # English text
+    text_te = Column(String)  # Telugu text (optional)
+
+    is_daily = Column(Boolean, default=False)
+    verse_date = Column(DateTime(timezone=True))
+
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+
+    # Index for efficient queries
+    __table_args__ = (
+        {"schema": "public"},
+    )
+
+
 # ================= PRAYER REQUESTS =================
 class PrayerRequest(Base, BaseModel):
     __tablename__ = "prayer_requests"

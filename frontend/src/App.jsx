@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useContext } from "react";
+import { useContext, useMemo, useState } from "react";
 import { AuthProvider, AuthContext } from "./context/AuthContext";
+
+import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -12,10 +14,11 @@ import Live from "./pages/Live";
 import Services from "./pages/Services";
 import ServiceDetails from "./pages/ServiceDetails";
 import AddEvent from "./pages/AddEvent";
+import Bible from "./pages/Bible";
+import BibleVerseManager from "./pages/BibleVerseManager";
 import Layout from "./components/Layout";
 import Prayers from "./pages/Prayers";
 
-// 🔐 NEW IMPORTS (IMPORTANT)
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 
@@ -43,99 +46,174 @@ function PublicRoute({ children }) {
 }
 
 function App() {
+  // 🌗 THEME STATE
+  const [mode, setMode] = useState("dark");
+
+  const toggleTheme = () => {
+    setMode((prev) => (prev === "light" ? "dark" : "light"));
+  };
+
+  // 🎨 MUI THEME
+  const theme = useMemo(
+    () =>
+      createTheme({
+        palette: {
+          mode,
+          ...(mode === "dark"
+            ? {
+                background: {
+                  default: "#0f172a",
+                  paper: "#1e293b",
+                },
+              }
+            : {
+                background: {
+                  default: "#f9fafb",
+                  paper: "#ffffff",
+                },
+              }),
+        },
+        typography: {
+          fontFamily: "'Poppins', sans-serif",
+        },
+      }),
+    [mode]
+  );
+
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
 
-          {/* 🔓 Public Routes */}
-          <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
-          <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
-          <Route path="/services" element={<Services />} />
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
 
-          {/* 🔐 AUTH ROUTES ADDED */}
-          <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
-          <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
+            {/* 🔓 Public Routes */}
+            <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
+            <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+            <Route path="/services" element={<Services />} />
 
-          {/* 🔐 Protected Routes */}
-          <Route
-            path="/services/:id"
-            element={
-              <PrivateRoute>
-                <Layout><ServiceDetails /></Layout>
-              </PrivateRoute>
-            }
-          />
+            <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+            <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
 
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute>
-                <Layout><Dashboard /></Layout>
-              </PrivateRoute>
-            }
-          />
+            {/* 🔐 Protected Routes */}
+            <Route
+              path="/services/:id"
+              element={
+                <PrivateRoute>
+                  <Layout mode={mode} toggleTheme={toggleTheme}>
+                    <ServiceDetails />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
 
-          <Route
-            path="/members"
-            element={
-              <PrivateRoute allowedRoles={["ADMIN"]}>
-                <Layout><Members /></Layout>
-              </PrivateRoute>
-            }
-          />
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <Layout mode={mode} toggleTheme={toggleTheme}>
+                    <Dashboard />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
 
-          <Route
-            path="/events"
-            element={
-              <PrivateRoute>
-                <Layout><Events /></Layout>
-              </PrivateRoute>
-            }
-          />
+            <Route
+              path="/members"
+              element={
+                <PrivateRoute allowedRoles={["ADMIN"]}>
+                  <Layout mode={mode} toggleTheme={toggleTheme}>
+                    <Members />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
 
-          <Route
-            path="/add-event"
-            element={
-              <PrivateRoute allowedRoles={["ADMIN", "PASTOR"]}>
-                <Layout><AddEvent /></Layout>
-              </PrivateRoute>
-            }
-          />
+            <Route
+              path="/events"
+              element={
+                <PrivateRoute>
+                  <Layout mode={mode} toggleTheme={toggleTheme}>
+                    <Events />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
 
-          <Route
-            path="/donations"
-            element={
-              <PrivateRoute>
-                <Layout><Donations /></Layout>
-              </PrivateRoute>
-            }
-          />
+            <Route
+              path="/add-event"
+              element={
+                <PrivateRoute allowedRoles={["ADMIN", "PASTOR"]}>
+                  <Layout mode={mode} toggleTheme={toggleTheme}>
+                    <AddEvent />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
 
-          <Route
-            path="/prayers"
-            element={
-              <PrivateRoute>
-                <Layout><Prayers /></Layout>
-              </PrivateRoute>
-            }
-          />
+            <Route
+              path="/donations"
+              element={
+                <PrivateRoute>
+                  <Layout mode={mode} toggleTheme={toggleTheme}>
+                    <Donations />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
 
-          <Route
-            path="/live"
-            element={
-              <PrivateRoute>
-                <Layout><Live /></Layout>
-              </PrivateRoute>
-            }
-          />
+            <Route
+              path="/prayers"
+              element={
+                <PrivateRoute>
+                  <Layout mode={mode} toggleTheme={toggleTheme}>
+                    <Prayers />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
 
-          {/* 🔄 Catch-all */}
-          <Route path="*" element={<Navigate to="/" />} />
+            <Route
+              path="/live"
+              element={
+                <PrivateRoute>
+                  <Layout mode={mode} toggleTheme={toggleTheme}>
+                    <Live />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
 
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+            <Route
+              path="/bible"
+              element={
+                <PrivateRoute>
+                  <Layout mode={mode} toggleTheme={toggleTheme}>
+                    <Bible />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/bible-manager"
+              element={
+                <PrivateRoute allowedRoles={["ADMIN"]}>
+                  <Layout mode={mode} toggleTheme={toggleTheme}>
+                    <BibleVerseManager />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
+
+            {/* 🔄 Catch-all */}
+            <Route path="*" element={<Navigate to="/" />} />
+
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

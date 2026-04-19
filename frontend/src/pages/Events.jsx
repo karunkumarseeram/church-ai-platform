@@ -332,6 +332,7 @@ const styles = {
     padding: 18,
     borderRadius: 12,
     position: "relative",
+    textAlign: "center",
   },
 
   today: {
