@@ -1,43 +1,41 @@
 import { createContext, useState, useEffect } from "react";
-// import jwtDecode from "jwt-decode"; // fixed import
-import jwtDecode from "jwt-decode"; // must match usage below
+import jwtDecode from "jwt-decode"; // Important for decoding role from JWT
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  
+  // Retrieving stored token for initial load
   const storedToken = localStorage.getItem("token");
   const [token, setToken] = useState(storedToken);
   const [userRole, setUserRole] = useState(null);
 
-  // On initial load, decode token if exists
+  // Decode token and set user role on load
   useEffect(() => {
     if (storedToken) {
       try {
-        const decoded = jwtDecode(storedToken); // fixed usage
+        const decoded = jwtDecode(storedToken); // Extract role
         setUserRole(decoded.role);
       } catch (err) {
-        console.error("Invalid token", err);
-        setToken(null);
-        setUserRole(null);
+        console.error("Invalid token on load:", err);
+        logout(); // Clear invalid token
       }
     }
   }, [storedToken]);
 
-  const login = (token) => {
-    localStorage.setItem("token", token);
-    setToken(token);
+  const login = (newToken) => {
+    localStorage.setItem("token", newToken); // Save token
+    setToken(newToken);
     try {
-      const decoded = jwtDecode(token); // fixed usage
+      const decoded = jwtDecode(newToken); // Decode role from token
       setUserRole(decoded.role);
     } catch (err) {
-      console.error("Failed to decode token", err);
-      setUserRole(null);
+      console.error("Failed to decode token:", err);
+      logout();
     }
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem("token"); // Remove token from storage
     setToken(null);
     setUserRole(null);
   };

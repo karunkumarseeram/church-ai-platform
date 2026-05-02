@@ -13,6 +13,7 @@ import SelfImprovementIcon from "@mui/icons-material/SelfImprovement";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
+
 export default function Sidebar() {
   const { userRole } = useContext(AuthContext);
 
@@ -29,9 +30,10 @@ export default function Sidebar() {
   ];
 
   // Filter menu items based on user role
-  const filteredMenuItems = menuItems.filter(item =>
+  const filteredMenuItems = menuItems.filter((item) =>
     !item.roles || item.roles.includes(userRole)
   );
+
   return (
     <Box
       sx={{
@@ -43,7 +45,6 @@ export default function Sidebar() {
         boxShadow: "4px 0 20px rgba(0,0,0,0.1)",
       }}
     >
-      {/* 🔥 Logo + Title */}
       <Box
         sx={{
           p: 3,
@@ -53,7 +54,6 @@ export default function Sidebar() {
           gap: 1.5,
         }}
       >
-        {/* ✅ Logo from public folder */}
         <Box
           component="img"
           src="/fft_logo.png"
@@ -72,8 +72,6 @@ export default function Sidebar() {
             },
           }}
         />
-
-        {/* Title */}
         <Box
           sx={{
             fontSize: "1.4rem",
@@ -90,7 +88,6 @@ export default function Sidebar() {
         </Box>
       </Box>
 
-      {/* 📋 Menu Items */}
       <List sx={{ px: 2 }}>
         {filteredMenuItems.map((item) => (
           <ListItem
@@ -108,12 +105,10 @@ export default function Sidebar() {
               color: "#333",
               fontWeight: 500,
               transition: "all 0.3s ease",
-
               "&:hover": {
                 background: "rgba(255,255,255,0.6)",
                 transform: "translateX(6px)",
               },
-
               "&.active": {
                 background: "linear-gradient(90deg, #AA3BFF, #6A5ACD)",
                 color: "#fff",
@@ -122,10 +117,7 @@ export default function Sidebar() {
               },
             }}
           >
-            {/* Icon */}
             <Box>{item.icon}</Box>
-
-            {/* Text */}
             <ListItemText
               primary={item.name}
               primaryTypographyProps={{
@@ -137,7 +129,6 @@ export default function Sidebar() {
         ))}
       </List>
 
-      {/* Footer */}
       <Box
         sx={{
           mt: "auto",

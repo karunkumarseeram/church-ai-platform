@@ -4,6 +4,7 @@ import { AuthProvider, AuthContext } from "./context/AuthContext";
 
 import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
 
+import Landing from "./pages/Landing"; // Import your Landing Page
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
@@ -19,20 +20,18 @@ import BibleVerseManager from "./pages/BibleVerseManager";
 import Scanner from "./pages/Scanner";
 import Layout from "./components/Layout";
 import Prayers from "./pages/Prayers";
-
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 
-// 🔐 Private Route
 function PrivateRoute({ children, allowedRoles = [] }) {
   const { token, userRole } = useContext(AuthContext);
 
-  if (!token) return <Navigate to="/" />;
+  if (!token) return <Navigate to="/login" replace />;
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
     return (
       <div style={{ padding: 30, color: "#6A1B9A", fontWeight: "bold" }}>
-        Access Denied. Admins only.
+        Access Denied. You do not have the required permissions.
       </div>
     );
   }
@@ -40,21 +39,18 @@ function PrivateRoute({ children, allowedRoles = [] }) {
   return children;
 }
 
-// 🔓 Public Route
 function PublicRoute({ children }) {
   const { token } = useContext(AuthContext);
-  return token ? <Navigate to="/dashboard" /> : children;
+  return token ? <Navigate to="/dashboard" replace /> : children;
 }
 
 function App() {
-  // 🌗 THEME STATE
   const [mode, setMode] = useState("dark");
 
   const toggleTheme = () => {
     setMode((prev) => (prev === "light" ? "dark" : "light"));
   };
 
-  // 🎨 MUI THEME
   const theme = useMemo(
     () =>
       createTheme({
@@ -89,15 +85,17 @@ function App() {
         <BrowserRouter>
           <Routes>
 
-            {/* 🔓 Public Routes */}
-            <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
+            {/* 🌟 New Default Landing Page */}
+            <Route path="/" element={<Landing />} />
+
+            {/* Public Routes */}
+            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
             <Route path="/services" element={<Services />} />
-
             <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
             <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
 
-            {/* 🔐 Protected Routes */}
+            {/* Protected Routes */}
             <Route
               path="/services/:id"
               element={
@@ -108,7 +106,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-
             <Route
               path="/dashboard"
               element={
@@ -119,7 +116,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-
             <Route
               path="/members"
               element={
@@ -130,7 +126,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-
             <Route
               path="/events"
               element={
@@ -141,7 +136,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-
             <Route
               path="/add-event"
               element={
@@ -152,7 +146,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-
             <Route
               path="/donations"
               element={
@@ -163,7 +156,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-
             <Route
               path="/scanner"
               element={
@@ -174,7 +166,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-
             <Route
               path="/prayers"
               element={
@@ -185,7 +176,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-
             <Route
               path="/live"
               element={
@@ -196,7 +186,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-
             <Route
               path="/bible"
               element={
@@ -207,7 +196,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-
             <Route
               path="/bible-manager"
               element={
@@ -219,7 +207,7 @@ function App() {
               }
             />
 
-            {/* 🔄 Catch-all */}
+            {/* Catch-All */}
             <Route path="*" element={<Navigate to="/" />} />
 
           </Routes>
@@ -230,126 +218,3 @@ function App() {
 }
 
 export default App;
-
-
-// import { useState } from 'react'
-// import reactLogo from './assets/react.svg'
-// import viteLogo from './assets/vite.svg'
-// import heroImg from './assets/hero.png'
-// import './App.css'
-
-// function App() {
-//   const [count, setCount] = useState(0)
-
-//   return (
-//     <>
-//       <section id="center">
-//         <div className="hero">
-//           <img src={heroImg} className="base" width="170" height="179" alt="" />
-//           <img src={reactLogo} className="framework" alt="React logo" />
-//           <img src={viteLogo} className="vite" alt="Vite logo" />
-//         </div>
-//         <div>
-//           <h1>Get started</h1>
-//           <p>
-//             Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-//           </p>
-//         </div>
-//         <button
-//           className="counter"
-//           onClick={() => setCount((count) => count + 1)}
-//         >
-//           Count is {count}
-//         </button>
-//       </section>
-
-//       <div className="ticks"></div>
-
-//       <section id="next-steps">
-//         <div id="docs">
-//           <svg className="icon" role="presentation" aria-hidden="true">
-//             <use href="/icons.svg#documentation-icon"></use>
-//           </svg>
-//           <h2>Documentation</h2>
-//           <p>Your questions, answered</p>
-//           <ul>
-//             <li>
-//               <a href="https://vite.dev/" target="_blank">
-//                 <img className="logo" src={viteLogo} alt="" />
-//                 Explore Vite
-//               </a>
-//             </li>
-//             <li>
-//               <a href="https://react.dev/" target="_blank">
-//                 <img className="button-icon" src={reactLogo} alt="" />
-//                 Learn more
-//               </a>
-//             </li>
-//           </ul>
-//         </div>
-//         <div id="social">
-//           <svg className="icon" role="presentation" aria-hidden="true">
-//             <use href="/icons.svg#social-icon"></use>
-//           </svg>
-//           <h2>Connect with us</h2>
-//           <p>Join the Vite community</p>
-//           <ul>
-//             <li>
-//               <a href="https://github.com/vitejs/vite" target="_blank">
-//                 <svg
-//                   className="button-icon"
-//                   role="presentation"
-//                   aria-hidden="true"
-//                 >
-//                   <use href="/icons.svg#github-icon"></use>
-//                 </svg>
-//                 GitHub
-//               </a>
-//             </li>
-//             <li>
-//               <a href="https://chat.vite.dev/" target="_blank">
-//                 <svg
-//                   className="button-icon"
-//                   role="presentation"
-//                   aria-hidden="true"
-//                 >
-//                   <use href="/icons.svg#discord-icon"></use>
-//                 </svg>
-//                 Discord
-//               </a>
-//             </li>
-//             <li>
-//               <a href="https://x.com/vite_js" target="_blank">
-//                 <svg
-//                   className="button-icon"
-//                   role="presentation"
-//                   aria-hidden="true"
-//                 >
-//                   <use href="/icons.svg#x-icon"></use>
-//                 </svg>
-//                 X.com
-//               </a>
-//             </li>
-//             <li>
-//               <a href="https://bsky.app/profile/vite.dev" target="_blank">
-//                 <svg
-//                   className="button-icon"
-//                   role="presentation"
-//                   aria-hidden="true"
-//                 >
-//                   <use href="/icons.svg#bluesky-icon"></use>
-//                 </svg>
-//                 Bluesky
-//               </a>
-//             </li>
-//           </ul>
-//         </div>
-//       </section>
-
-//       <div className="ticks"></div>
-//       <section id="spacer"></section>
-//     </>
-//   )
-// }
-
-// export default App

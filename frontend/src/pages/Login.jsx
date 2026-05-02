@@ -285,7 +285,13 @@ const styles = {
   },
   logo: { width: 100, marginBottom: 10 },
   title: { color: "#6A1B9A", fontSize: 28, marginBottom: 5 },
-  subtitle: { fontSize: 14, marginBottom: 20 },
+  subtitle: {
+  fontSize: 14,
+  marginBottom: 20,
+  color: "#6A1B9A",   // 👈 FIXED: strong purple for visibility
+  fontWeight: "600",
+  letterSpacing: "1px",
+},
 
   input: {
     width: "100%",
