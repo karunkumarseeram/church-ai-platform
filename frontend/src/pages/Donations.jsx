@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext } from "react";
 import {
   Box,
   Typography,
@@ -13,217 +13,222 @@ import {
   MenuItem,
   Snackbar,
   Alert
-} from '@mui/material';
+} from "@mui/material";
 
-import { VolunteerActivism as DonationIcon } from '@mui/icons-material';
+import { VolunteerActivism as DonationIcon } from "@mui/icons-material";
+import { QRCode } from "react-qr-code";
+import { loadStripe } from "@stripe/stripe-js";
+import { AuthContext } from "../context/AuthContext";
+import API from "../services/api";
 
-import { loadStripe } from '@stripe/stripe-js';
-import { QRCode } from 'react-qr-code';
-import { AuthContext } from '../context/AuthContext';
-import API from '../services/api';
+/* ---------------- STRIPE KEY ---------------- */
+const STRIPE_PUBLIC_KEY = "pk_test_...";
 
-/* ---------------- CONFIG ---------------- */
-const STRIPE_PUBLIC_KEY = 'pk_test_...';
-
+/* ---------------- PAYMENT METHODS ---------------- */
 const PAYMENT_METHODS = {
-  UPI: { label: 'UPI (PhonePe / GPay / Paytm)', api: 'UPI' },
-  CARD_STRIPE: { label: 'Card (Stripe)', api: 'CARD' },
-  CASH: { label: 'Bank Transfer / Cash', api: 'CASH' }
+  UPI: { label: "UPI (PhonePe / GPay / Paytm)", api: "UPI" },
+  CARD_STRIPE: { label: "Card (Stripe)", api: "CARD" },
+  CASH: { label: "Bank Transfer / Cash", api: "CASH" }
 };
 
+/* ---------------- STYLE ---------------- */
+const fontFamily = "'Inter', Arial, sans-serif";
+
+const headerStyle = {
+  display: "grid",
+  gridTemplateColumns: "2fr 1fr 1fr 1fr",
+  gap: "10px",
+  padding: "14px",
+  borderRadius: "12px",
+  background: "linear-gradient(90deg,#ede7f6,#f3e5f5)",
+  color: "#4a148c",
+  fontWeight: 700,
+  fontSize: "12px",
+  textTransform: "uppercase",
+  fontFamily
+};
+
+const rowStyle = {
+  display: "grid",
+  gridTemplateColumns: "2fr 1fr 1fr 1fr",
+  gap: "10px",
+  padding: "14px",
+  marginTop: "10px",
+  borderRadius: "12px",
+
+  background: "linear-gradient(135deg, #fffdf5 0%, #fff8e1 50%, #ffecb3 100%)",
+
+  boxShadow: "0 3px 12px rgba(0,0,0,0.08)",
+  fontFamily,
+  alignItems: "center",
+  border: "1px solid rgba(0,0,0,0.08)",
+
+  color: "#1f2937"   // ✅ THIS FIXES TEXT DISAPPEARING
+};
+
+const statusStyle = (status) => ({
+  padding: "6px 10px",
+  borderRadius: "8px",
+  color: "#fff",
+  fontWeight: 700,
+  fontSize: "12px",
+  textAlign: "center",
+  background:
+    status === "SUCCESS"
+      ? "#2e7d32"
+      : status === "PENDING"
+      ? "#ff9800"
+      : "#e53935"
+});
+
+/* ---------------- COMPONENT ---------------- */
 const Donations = () => {
   const { userRole } = useContext(AuthContext);
-  const isAdmin = userRole === 'ADMIN' || userRole === 'PASTOR';
+  const isAdmin = userRole === "ADMIN" || userRole === "PASTOR";
 
   const [formData, setFormData] = useState({
-    donor_name: '',
-    amount: '',
-    payment_method: '',
-    transaction_id: ''
+    donor_name: "",
+    amount: "",
+    payment_method: ""
   });
 
+  const [donations, setDonations] = useState([]);
   const [bankDetails, setBankDetails] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const [stats, setStats] = useState(null);
-  const [adminDonations, setAdminDonations] = useState([]);
+  const [filters, setFilters] = useState({
+    name: "",
+    minAmount: "",
+    maxAmount: "",
+    method: "ALL",
+    status: "ALL"
+  });
 
   const [snackbar, setSnackbar] = useState({
     open: false,
-    message: '',
-    severity: 'success'
+    message: "",
+    severity: "success"
   });
 
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
-  /* ---------------- INIT ---------------- */
+  /* ---------------- LOAD ---------------- */
   useEffect(() => {
+    loadData();
     loadBank();
-    loadAdminData();
 
     const params = new URLSearchParams(window.location.search);
 
     if (params.get("success") === "true") {
       setPaymentSuccess(true);
-      loadAdminData();
+      setTimeout(() => loadData(), 500);
       window.history.replaceState({}, document.title, "/donations");
     }
   }, []);
 
-  /* ---------------- RESET transaction when method changes ---------------- */
-  useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      transaction_id: ''
-    }));
-  }, [formData.payment_method]);
-
-  /* ---------------- ADMIN DATA ---------------- */
-  const loadAdminData = async () => {
-    try {
-      if (isAdmin) {
-        const [donationsRes, statsRes] = await Promise.all([
-          API.get('/donations'),
-          API.get('/donations/stats/summary')
-        ]);
-
-        setAdminDonations(donationsRes.data);
-        setStats(statsRes.data);
-      }
-    } catch (err) {
-      console.error(err);
-    }
+  const loadData = async () => {
+    const res = await API.get(
+      isAdmin ? "/donations" : "/donations/my-donations"
+    );
+    setDonations(res.data);
   };
 
-  /* ---------------- BANK ---------------- */
   const loadBank = async () => {
-    try {
-      const res = await API.get('/donations/info/bank-details');
-      setBankDetails(res.data);
-    } catch (err) {
-      console.error(err);
-    }
+    const res = await API.get("/donations/info/bank-details");
+    setBankDetails(res.data);
   };
 
-  /* ---------------- VALID AMOUNT ---------------- */
-  const getValidAmount = () => {
-    const amount = parseFloat(formData.amount);
-    if (!amount || amount <= 0) return null;
-    return amount;
-  };
-
-  /* ---------------- STRIPE ---------------- */
-  const handleStripe = async () => {
-    try {
-      const amount = getValidAmount();
-
-      // 🔥 HARD GUARD (fixes your 400 error)
-      if (!formData.donor_name || !amount) {
-        setSnackbar({
-          open: true,
-          message: "Enter valid name and amount",
-          severity: "warning"
-        });
-        return;
-      }
-
-      setLoading(true);
-
-      const res = await API.post('/donations/create-stripe-session', {
-        donor_name: formData.donor_name,
-        amount: Number(amount), // 🔥 FIX: force number
-        success_url: window.location.origin + "/donations?success=true",
-        cancel_url: window.location.origin + "/donations?cancel=true"
-      });
-
-      if (res.data?.url) {
-        window.location.href = res.data.url;
-      }
-
-    } catch (err) {
-      console.error("Stripe error:", err?.response?.data || err.message);
-
-      setSnackbar({
-        open: true,
-        message: err?.response?.data?.message || "Stripe failed",
-        severity: "error"
-      });
-
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /* ---------------- NORMAL PAYMENT ---------------- */
-  const handleSubmit = async () => {
-    try {
-      setLoading(true);
-
-      const amount = getValidAmount();
-      if (!formData.donor_name || !amount) {
-        setSnackbar({
-          open: true,
-          message: "Enter valid details",
-          severity: "warning"
-        });
-        return;
-      }
-
-      await API.post('/donations', {
-        donor_name: formData.donor_name,
-        amount,
-        payment_method: PAYMENT_METHODS[formData.payment_method]?.api || 'CASH',
-        transaction_id: formData.transaction_id
-      });
-
-      setSnackbar({
-        open: true,
-        message: 'Donation saved',
-        severity: 'success'
-      });
-
-      setFormData({
-        donor_name: '',
-        amount: '',
-        payment_method: '',
-        transaction_id: ''
-      });
-
-      loadAdminData();
-
-    } catch (err) {
-      setSnackbar({ open: true, message: 'Error', severity: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /* ---------------- UPI LINK ---------------- */
+  /* ---------------- UPI ---------------- */
   const upiLink =
     bankDetails?.upi && formData.amount
       ? `upi://pay?pa=${bankDetails.upi}&pn=Church&am=${formData.amount}&cu=INR`
       : null;
 
-  /* ---------------- SUCCESS SCREEN ---------------- */
+  const isUPI = formData.payment_method === "UPI";
+
+  /* ---------------- STRIPE RESTORED ---------------- */
+  const handleStripe = async () => {
+    try {
+      setLoading(true);
+
+      const stripe = await loadStripe(STRIPE_PUBLIC_KEY);
+
+      const res = await API.post("/donations/create-stripe-session", {
+        donor_name: formData.donor_name,
+        amount: formData.amount,
+        success_url: window.location.origin + "/donations?success=true",
+        cancel_url: window.location.origin + "/donations"
+      });
+
+      if (res.data?.url) {
+        window.location.href = res.data.url;
+      }
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: "Stripe failed",
+        severity: "error"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ---------------- CASH / UPI SAVE ---------------- */
+  const handleSubmit = async () => {
+    try {
+      await API.post("/donations", {
+        ...formData,
+        payment_method:
+          PAYMENT_METHODS[formData.payment_method]?.api || "CASH"
+      });
+
+      setSnackbar({
+        open: true,
+        message: "Donation saved",
+        severity: "success"
+      });
+
+      loadData();
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: "Error",
+        severity: "error"
+      });
+    }
+  };
+
+  /* ---------------- FILTER ---------------- */
+  const filteredDonations = donations.filter((d) => {
+    const nameMatch =
+      d.donor_name?.toLowerCase().includes(filters.name.toLowerCase());
+
+    const amount = parseFloat(d.amount || 0);
+
+    const minMatch =
+      filters.minAmount === "" || amount >= parseFloat(filters.minAmount);
+
+    const maxMatch =
+      filters.maxAmount === "" || amount <= parseFloat(filters.maxAmount);
+
+    const methodMatch =
+      filters.method === "ALL" || d.payment_method === filters.method;
+
+    const statusMatch =
+      filters.status === "ALL" || d.status === filters.status;
+
+    return nameMatch && minMatch && maxMatch && methodMatch && statusMatch;
+  });
+
+  /* ---------------- SUCCESS PAGE ---------------- */
   if (paymentSuccess) {
     return (
-      <Box sx={{ textAlign: 'center', mt: 10 }}>
+      <Box sx={{ textAlign: "center", mt: 10 }}>
         <Typography variant="h4" color="success.main">
           🎉 Payment Successful
         </Typography>
-
-        <Typography sx={{ mt: 2 }}>
-          Thank you for your donation
-        </Typography>
-
-        <Button
-          sx={{ mt: 3 }}
-          variant="contained"
-          onClick={() => {
-            setPaymentSuccess(false);
-            loadAdminData();
-          }}
-        >
+        <Button sx={{ mt: 3 }} onClick={() => setPaymentSuccess(false)}>
           Back
         </Button>
       </Box>
@@ -231,16 +236,16 @@ const Donations = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 3, fontFamily }}>
 
-      <Typography variant="h4">
+      <Typography variant="h4" sx={{ mb: 3, color: "#4a148c" }}>
         <DonationIcon /> Donations
       </Typography>
 
-      {/* ---------------- FORM ---------------- */}
-      <Grid container spacing={3} sx={{ mt: 2 }}>
+      <Grid container spacing={3}>
 
-        <Grid item xs={12} md={6}>
+        {/* FORM */}
+        <Grid item xs={12} md={5}>
           <Card>
             <CardContent>
 
@@ -265,7 +270,7 @@ const Donations = () => {
               />
 
               <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>Payment</InputLabel>
+                <InputLabel>Payment Method</InputLabel>
                 <Select
                   value={formData.payment_method}
                   onChange={(e) =>
@@ -280,41 +285,23 @@ const Donations = () => {
                 </Select>
               </FormControl>
 
-              {/* CASH */}
-              {formData.payment_method === 'CASH' && bankDetails && (
-                <Box>
-                  <div>{bankDetails.bank_name}</div>
-                  <div>{bankDetails.account_number}</div>
-                  <div>{bankDetails.ifsc}</div>
-                </Box>
-              )}
-
-              {/* UPI */}
-              {formData.payment_method === 'UPI' && upiLink && (
-                <Box sx={{ textAlign: 'center' }}>
-                  <QRCode value={upiLink} size={160} />
-                  <Typography sx={{ mt: 1 }}>
-                    Scan with any UPI app
+              {/* UPI QR */}
+              {isUPI && upiLink && (
+                <Box sx={{ textAlign: "center", mb: 2 }}>
+                  <QRCode value={upiLink} size={150} />
+                  <Typography sx={{ fontSize: "13px" }}>
+                    Scan UPI QR
                   </Typography>
-
-                  <Button
-                    fullWidth
-                    sx={{ mt: 1 }}
-                    variant="outlined"
-                    onClick={() => window.location.href = upiLink}
-                  >
-                    Pay via UPI
-                  </Button>
                 </Box>
               )}
 
-              {/* BUTTON */}
+              {/* STRIPE BUTTON FIXED */}
               <Button
                 fullWidth
                 variant="contained"
                 disabled={loading}
                 onClick={() =>
-                  formData.payment_method === 'CARD_STRIPE'
+                  formData.payment_method === "CARD_STRIPE"
                     ? handleStripe()
                     : handleSubmit()
                 }
@@ -326,40 +313,87 @@ const Donations = () => {
           </Card>
         </Grid>
 
-        {/* ADMIN TABLE */}
-        {isAdmin && (
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
+        {/* TABLE */}
+        <Grid item xs={12} md={7}>
+          <Card>
+            <CardContent>
 
-                <Typography variant="h6">All Donations</Typography>
+              <Typography sx={{ mb: 2, fontWeight: 700 }}>
+                All Donations
+              </Typography>
 
-                <table width="100%">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Amount</th>
-                      <th>Method</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
+              {/* FILTERS */}
+              <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 2 }}>
 
-                  <tbody>
-                    {adminDonations.map(d => (
-                      <tr key={d.id}>
-                        <td>{d.donor_name}</td>
-                        <td>₹{d.amount}</td>
-                        <td>{d.payment_method}</td>
-                        <td>{d.status}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <TextField
+                  size="small"
+                  label="Name"
+                  value={filters.name}
+                  onChange={(e) =>
+                    setFilters({ ...filters, name: e.target.value })
+                  }
+                />
 
-              </CardContent>
-            </Card>
-          </Grid>
-        )}
+                <TextField
+                  size="small"
+                  label="Min ₹"
+                  type="number"
+                  value={filters.minAmount}
+                  onChange={(e) =>
+                    setFilters({ ...filters, minAmount: e.target.value })
+                  }
+                />
+
+                <TextField
+                  size="small"
+                  label="Max ₹"
+                  type="number"
+                  value={filters.maxAmount}
+                  onChange={(e) =>
+                    setFilters({ ...filters, maxAmount: e.target.value })
+                  }
+                />
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+  <InputLabel>Status</InputLabel>
+  <Select
+    value={filters.status}
+    label="Status"
+    onChange={(e) =>
+      setFilters({ ...filters, status: e.target.value })
+    }
+  >
+    <MenuItem value="ALL">All</MenuItem>
+    <MenuItem value="SUCCESS">Success</MenuItem>
+    <MenuItem value="PENDING">Pending</MenuItem>
+    <MenuItem value="FAILED">Failed</MenuItem>
+  </Select>
+</FormControl>
+
+              </Box>
+
+              {/* HEADER */}
+              <Box sx={headerStyle}>
+                <div>Name</div>
+                <div>Amount</div>
+                <div>Method</div>
+                <div>Status</div>
+              </Box>
+
+              {/* ROWS */}
+              {filteredDonations.map((d) => (
+                <Box key={d.id} sx={rowStyle}>
+                  <div>{d.donor_name}</div>
+                  <div>₹{d.amount}</div>
+                  <div>{d.payment_method}</div>
+                  <div style={statusStyle(d.status)}>
+                    {d.status}
+                  </div>
+                </Box>
+              ))}
+
+            </CardContent>
+          </Card>
+        </Grid>
 
       </Grid>
 

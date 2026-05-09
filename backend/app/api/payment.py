@@ -18,23 +18,30 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 
 # ================================
-# STRIPE SESSION (FIXED SAFELY)
+# STRIPE SESSION (FIXED SAFE)
 # ================================
 @router.post("/create-stripe-session")
 async def create_stripe_session(request: Request):
     data = await request.json()
 
-    donor_name = data.get("donor_name", "Anonymous")
-
     try:
-        amount = float(data["amount"])  # rupees from frontend
+        donor_name = data.get("donor_name", "Anonymous")
+
+        # 🔥 FIX: validation guard
+        if "amount" not in data:
+            raise HTTPException(status_code=400, detail="Amount is required")
+
+        amount = float(data["amount"])
+
+        if amount <= 0:
+            raise HTTPException(status_code=400, detail="Invalid amount")
 
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
             line_items=[{
                 "price_data": {
                     "currency": "inr",
-                    "unit_amount": int(amount * 100),  # convert safely here
+                    "unit_amount": int(amount * 100),
                     "product_data": {
                         "name": "Church Donation",
                         "description": f"Donor: {donor_name}",
@@ -55,7 +62,7 @@ async def create_stripe_session(request: Request):
 
 
 # ================================
-# STRIPE WEBHOOK (SAFE FIXED)
+# STRIPE WEBHOOK
 # ================================
 @router.post("/stripe/webhook")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
@@ -79,7 +86,6 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         donor_name = session.get("metadata", {}).get("donor_name", "Anonymous")
         amount = session.get("amount_total", 0) / 100
 
-        # prevent duplicate entry
         existing = db.query(Donation).filter(
             Donation.transaction_id == session.get("id")
         ).first()
@@ -116,7 +122,7 @@ def get_bank_and_upi_details():
 
 
 # ================================
-# CREATE MANUAL DONATION (UNCHANGED)
+# CREATE MANUAL DONATION
 # ================================
 @router.post("/", response_model=DonationOut)
 async def create_donation(
@@ -143,20 +149,34 @@ async def create_donation(
 
 
 # ================================
-# ADMIN + USER ENDPOINTS (UNCHANGED)
+# ADMIN VIEW (UNCHANGED)
 # ================================
 @router.get("/", response_model=List[DonationOut])
 async def get_all(db: Session = Depends(get_db), current_user=Depends(admin_required)):
     return db.query(Donation).all()
 
 
+# ================================
+# USER VIEW (OLD - KEEP)
+# ================================
 @router.get("/my-donations", response_model=List[DonationOut])
 async def my_donations(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     return db.query(Donation).filter(Donation.user_id == current_user.id).all()
 
 
 # ================================
-# STATS (FIXED - ONLY ONE VERSION)
+# 🔥 NEW FIXED ROUTE (MISSING ONE)
+# ================================
+@router.get("/my", response_model=List[DonationOut])
+async def my_donations_alias(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    return db.query(Donation).filter(Donation.user_id == current_user.id).all()
+
+
+# ================================
+# STATS (UNCHANGED)
 # ================================
 @router.get("/stats/summary")
 async def donation_stats(
