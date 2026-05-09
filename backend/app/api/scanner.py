@@ -58,6 +58,7 @@ async def generate_qr_code(
 
         if qr_type == "event":
             event = db.query(Event).filter(Event.id == qr_id).first()
+
             if not event:
                 raise HTTPException(status_code=404, detail="Event not found")
 
@@ -68,8 +69,8 @@ async def generate_qr_code(
                 "timestamp": datetime.utcnow().isoformat()
             }
 
-        elif type == "member":
-            member = db.query(User).filter(User.id == id).first()
+        elif qr_type == "member":
+            member = db.query(User).filter(User.id == qr_id).first()
             if not member:
                 raise HTTPException(status_code=404, detail="Member not found")
 
@@ -105,8 +106,8 @@ async def generate_qr_code(
         return {
             "qr_code": img_base64,
             "data": qr_data_str,
-            "type": type,
-            "id": id
+            "type": qr_type,
+            "id": qr_id
         }
 
     except Exception as e:
