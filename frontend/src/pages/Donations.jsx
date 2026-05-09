@@ -55,15 +55,12 @@ const rowStyle = {
   padding: "14px",
   marginTop: "10px",
   borderRadius: "12px",
-
   background: "linear-gradient(135deg, #fffdf5 0%, #fff8e1 50%, #ffecb3 100%)",
-
   boxShadow: "0 3px 12px rgba(0,0,0,0.08)",
   fontFamily,
   alignItems: "center",
   border: "1px solid rgba(0,0,0,0.08)",
-
-  color: "#1f2937"   // ✅ THIS FIXES TEXT DISAPPEARING
+  color: "#1f2937"
 };
 
 const statusStyle = (status) => ({
@@ -81,7 +78,6 @@ const statusStyle = (status) => ({
       : "#e53935"
 });
 
-/* ---------------- COMPONENT ---------------- */
 const Donations = () => {
   const { userRole } = useContext(AuthContext);
   const isAdmin = userRole === "ADMIN" || userRole === "PASTOR";
@@ -95,6 +91,8 @@ const Donations = () => {
   const [donations, setDonations] = useState([]);
   const [bankDetails, setBankDetails] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const [stats, setStats] = useState(null); // ✅ ADDED (safe)
 
   const [filters, setFilters] = useState({
     name: "",
@@ -117,6 +115,8 @@ const Donations = () => {
     loadData();
     loadBank();
 
+    if (isAdmin) loadStats(); // ✅ ONLY ADMIN
+
     const params = new URLSearchParams(window.location.search);
 
     if (params.get("success") === "true") {
@@ -138,6 +138,16 @@ const Donations = () => {
     setBankDetails(res.data);
   };
 
+  /* ---------------- ADMIN STATS ---------------- */
+  const loadStats = async () => {
+    try {
+      const res = await API.get("/donations/stats/summary");
+      setStats(res.data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   /* ---------------- UPI ---------------- */
   const upiLink =
     bankDetails?.upi && formData.amount
@@ -146,7 +156,7 @@ const Donations = () => {
 
   const isUPI = formData.payment_method === "UPI";
 
-  /* ---------------- STRIPE RESTORED ---------------- */
+  /* ---------------- STRIPE ---------------- */
   const handleStripe = async () => {
     try {
       setLoading(true);
@@ -174,7 +184,7 @@ const Donations = () => {
     }
   };
 
-  /* ---------------- CASH / UPI SAVE ---------------- */
+  /* ---------------- SAVE ---------------- */
   const handleSubmit = async () => {
     try {
       await API.post("/donations", {
@@ -241,6 +251,35 @@ const Donations = () => {
       <Typography variant="h4" sx={{ mb: 3, color: "#4a148c" }}>
         <DonationIcon /> Donations
       </Typography>
+
+      {/* ================= ADMIN CARDS ================= */}
+      {isAdmin && stats && (
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+
+          <Grid item xs={12} md={4}>
+            <Card sx={{ background: "linear-gradient(135deg,#fff8e1,#ffe082)" }}>
+              <CardContent>
+                <Typography>Total Donations</Typography>
+                <Typography variant="h5">
+                  {stats.total_donations}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <Card sx={{ background: "linear-gradient(135deg,#e8f5e9,#a5d6a7)" }}>
+              <CardContent>
+                <Typography>Total Amount</Typography>
+                <Typography variant="h5">
+                  ₹{stats.total_amount}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+        </Grid>
+      )}
 
       <Grid container spacing={3}>
 
@@ -321,8 +360,7 @@ const Donations = () => {
               <Typography sx={{ mb: 2, fontWeight: 700 }}>
                 All Donations
               </Typography>
-
-              {/* FILTERS */}
+                {/* FILTERS */}
               <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 2 }}>
 
                 <TextField
@@ -379,7 +417,6 @@ const Donations = () => {
                 <div>Status</div>
               </Box>
 
-              {/* ROWS */}
               {filteredDonations.map((d) => (
                 <Box key={d.id} sx={rowStyle}>
                   <div>{d.donor_name}</div>
