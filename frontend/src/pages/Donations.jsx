@@ -12,35 +12,21 @@ import {
   Select,
   MenuItem,
   Snackbar,
-  Alert,
-  IconButton
+  Alert
 } from '@mui/material';
 
-import {
-  VolunteerActivism as DonationIcon,
-  ContentCopy as CopyIcon
-} from '@mui/icons-material';
-
+import { VolunteerActivism as DonationIcon } from '@mui/icons-material';
 
 import { loadStripe } from '@stripe/stripe-js';
 import { QRCode } from 'react-qr-code';
 import { AuthContext } from '../context/AuthContext';
 import API from '../services/api';
 
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer
-} from 'recharts';
-
+/* ---------------- CONFIG ---------------- */
 const STRIPE_PUBLIC_KEY = 'pk_test_...';
 
 const PAYMENT_METHODS = {
-  UPI_PHONEPE: { label: 'PhonePe', api: 'PHONEPE' },
-  UPI_GPAY: { label: 'Google Pay', api: 'GPAY' },
+  UPI: { label: 'UPI (PhonePe / GPay / Paytm)', api: 'UPI' },
   CARD_STRIPE: { label: 'Card (Stripe)', api: 'CARD' },
   CASH: { label: 'Bank Transfer / Cash', api: 'CASH' }
 };
@@ -61,7 +47,6 @@ const Donations = () => {
 
   const [stats, setStats] = useState(null);
   const [adminDonations, setAdminDonations] = useState([]);
-  const [topDonors, setTopDonors] = useState([]);
 
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -69,40 +54,41 @@ const Donations = () => {
     severity: 'success'
   });
 
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  /* ---------------- INIT ---------------- */
   useEffect(() => {
     loadBank();
     loadAdminData();
 
-    // ✅ FIX: after Stripe redirect
     const params = new URLSearchParams(window.location.search);
 
     if (params.get("success") === "true") {
-      setSnackbar({
-        open: true,
-        message: "Payment successful 🎉",
-        severity: "success"
-      });
-
+      setPaymentSuccess(true);
       loadAdminData();
-
       window.history.replaceState({}, document.title, "/donations");
     }
-
   }, []);
+
+  /* ---------------- RESET transaction when method changes ---------------- */
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      transaction_id: ''
+    }));
+  }, [formData.payment_method]);
 
   /* ---------------- ADMIN DATA ---------------- */
   const loadAdminData = async () => {
     try {
       if (isAdmin) {
-        const [donationsRes, statsRes, topRes] = await Promise.all([
+        const [donationsRes, statsRes] = await Promise.all([
           API.get('/donations'),
-          API.get('/donations/stats/summary'),
-          API.get('/donations/stats/top-donors')
+          API.get('/donations/stats/summary')
         ]);
 
         setAdminDonations(donationsRes.data);
         setStats(statsRes.data);
-        setTopDonors(topRes.data);
       }
     } catch (err) {
       console.error(err);
@@ -119,29 +105,33 @@ const Donations = () => {
     }
   };
 
-  const copy = async (text) => {
-    await navigator.clipboard.writeText(text);
-    setSnackbar({ open: true, message: 'Copied!', severity: 'success' });
-  };
-
+  /* ---------------- VALID AMOUNT ---------------- */
   const getValidAmount = () => {
     const amount = parseFloat(formData.amount);
-    return amount > 0 ? amount : null;
+    if (!amount || amount <= 0) return null;
+    return amount;
   };
 
-  /* ---------------- STRIPE (UNCHANGED LOGIC) ---------------- */
+  /* ---------------- STRIPE ---------------- */
   const handleStripe = async () => {
     try {
-      const stripe = await loadStripe(STRIPE_PUBLIC_KEY);
-
       const amount = getValidAmount();
-      if (!amount) return;
+
+      // 🔥 HARD GUARD (fixes your 400 error)
+      if (!formData.donor_name || !amount) {
+        setSnackbar({
+          open: true,
+          message: "Enter valid name and amount",
+          severity: "warning"
+        });
+        return;
+      }
 
       setLoading(true);
 
       const res = await API.post('/donations/create-stripe-session', {
         donor_name: formData.donor_name,
-        amount: amount,
+        amount: Number(amount), // 🔥 FIX: force number
         success_url: window.location.origin + "/donations?success=true",
         cancel_url: window.location.origin + "/donations?cancel=true"
       });
@@ -151,11 +141,14 @@ const Donations = () => {
       }
 
     } catch (err) {
+      console.error("Stripe error:", err?.response?.data || err.message);
+
       setSnackbar({
         open: true,
-        message: 'Stripe failed',
-        severity: 'error'
+        message: err?.response?.data?.message || "Stripe failed",
+        severity: "error"
       });
+
     } finally {
       setLoading(false);
     }
@@ -167,13 +160,19 @@ const Donations = () => {
       setLoading(true);
 
       const amount = getValidAmount();
-      if (!amount) return;
+      if (!formData.donor_name || !amount) {
+        setSnackbar({
+          open: true,
+          message: "Enter valid details",
+          severity: "warning"
+        });
+        return;
+      }
 
       await API.post('/donations', {
         donor_name: formData.donor_name,
         amount,
-        payment_method:
-          PAYMENT_METHODS[formData.payment_method]?.api || 'CASH',
+        payment_method: PAYMENT_METHODS[formData.payment_method]?.api || 'CASH',
         transaction_id: formData.transaction_id
       });
 
@@ -190,22 +189,46 @@ const Donations = () => {
         transaction_id: ''
       });
 
+      loadAdminData();
+
     } catch (err) {
-      setSnackbar({
-        open: true,
-        message: 'Error',
-        severity: 'error'
-      });
+      setSnackbar({ open: true, message: 'Error', severity: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
-  /* ---------------- FIXED UPI LINK ---------------- */
+  /* ---------------- UPI LINK ---------------- */
   const upiLink =
     bankDetails?.upi && formData.amount
       ? `upi://pay?pa=${bankDetails.upi}&pn=Church&am=${formData.amount}&cu=INR`
       : null;
+
+  /* ---------------- SUCCESS SCREEN ---------------- */
+  if (paymentSuccess) {
+    return (
+      <Box sx={{ textAlign: 'center', mt: 10 }}>
+        <Typography variant="h4" color="success.main">
+          🎉 Payment Successful
+        </Typography>
+
+        <Typography sx={{ mt: 2 }}>
+          Thank you for your donation
+        </Typography>
+
+        <Button
+          sx={{ mt: 3 }}
+          variant="contained"
+          onClick={() => {
+            setPaymentSuccess(false);
+            loadAdminData();
+          }}
+        >
+          Back
+        </Button>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ p: 3 }}>
@@ -213,31 +236,6 @@ const Donations = () => {
       <Typography variant="h4">
         <DonationIcon /> Donations
       </Typography>
-
-      {/* ---------------- ADMIN STATS ---------------- */}
-      {isAdmin && stats && (
-        <Grid container spacing={2} sx={{ mt: 2 }}>
-
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardContent>
-                <Typography>Total Donations</Typography>
-                <Typography variant="h5">{stats.total_donations}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardContent>
-                <Typography>Total Amount</Typography>
-                <Typography variant="h5">₹{stats.total_amount}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-        </Grid>
-      )}
 
       {/* ---------------- FORM ---------------- */}
       <Grid container spacing={3} sx={{ mt: 2 }}>
@@ -274,8 +272,10 @@ const Donations = () => {
                     setFormData({ ...formData, payment_method: e.target.value })
                   }
                 >
-                  {Object.entries(PAYMENT_METHODS).map(([k,v]) => (
-                    <MenuItem key={k} value={k}>{v.label}</MenuItem>
+                  {Object.entries(PAYMENT_METHODS).map(([k, v]) => (
+                    <MenuItem key={k} value={k}>
+                      {v.label}
+                    </MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -289,11 +289,13 @@ const Donations = () => {
                 </Box>
               )}
 
-              {/* UPI FIXED */}
-              {formData.payment_method === 'UPI_GPAY' && upiLink && (
+              {/* UPI */}
+              {formData.payment_method === 'UPI' && upiLink && (
                 <Box sx={{ textAlign: 'center' }}>
-                  <QRCode value={upiLink} size={150} />
-                  <Typography>Scan with Google Pay / PhonePe</Typography>
+                  <QRCode value={upiLink} size={160} />
+                  <Typography sx={{ mt: 1 }}>
+                    Scan with any UPI app
+                  </Typography>
 
                   <Button
                     fullWidth
@@ -301,15 +303,16 @@ const Donations = () => {
                     variant="outlined"
                     onClick={() => window.location.href = upiLink}
                   >
-                    Pay via UPI App
+                    Pay via UPI
                   </Button>
                 </Box>
               )}
 
-              {/* STRIPE / NORMAL */}
+              {/* BUTTON */}
               <Button
                 fullWidth
                 variant="contained"
+                disabled={loading}
                 onClick={() =>
                   formData.payment_method === 'CARD_STRIPE'
                     ? handleStripe()
