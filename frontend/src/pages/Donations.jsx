@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext } from "react";
 import {
   Box,
   Typography,
@@ -11,674 +11,439 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  IconButton,
-  Tooltip,
-  Alert,
   Snackbar,
-  CircularProgress,
-  Avatar,
-  Divider
-} from '@mui/material';
-import {
-  VolunteerActivism as DonationIcon,
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Payment as PaymentIcon,
-  AccountBalanceWallet as WalletIcon,
-  CreditCard as CardIcon,
-  Money as CashIcon,
-  Smartphone as PhoneIcon,
-  Analytics as AnalyticsIcon,
-  Receipt as ReceiptIcon,
-  QrCode as QrCodeIcon,
-  AccountBalance as BankIcon,
-  // Bank as BankIcon,
-  // AccountBalance as BankIcon,   // ✅ FIXED HERE
-  ContentCopy as CopyIcon
-} from '@mui/icons-material';
-import { AuthContext } from '../context/AuthContext';
-import API from '../services/api';
+  Alert
+} from "@mui/material";
+
+import { VolunteerActivism as DonationIcon } from "@mui/icons-material";
+import { QRCode } from "react-qr-code";
+import { loadStripe } from "@stripe/stripe-js";
+import { AuthContext } from "../context/AuthContext";
+import API from "../services/api";
+
+/* ---------------- STRIPE KEY ---------------- */
+const STRIPE_PUBLIC_KEY = "pk_test_...";
+
+/* ---------------- PAYMENT METHODS ---------------- */
+const PAYMENT_METHODS = {
+  UPI: { label: "UPI (PhonePe / GPay / Paytm)", api: "UPI" },
+  CARD_STRIPE: { label: "Card (Stripe)", api: "CARD" },
+  CASH: { label: "Bank Transfer / Cash", api: "CASH" }
+};
+
+/* ---------------- STYLE ---------------- */
+const fontFamily = "'Inter', Arial, sans-serif";
+
+const headerStyle = {
+  display: "grid",
+  gridTemplateColumns: "2fr 1fr 1fr 1fr",
+  gap: "10px",
+  padding: "14px",
+  borderRadius: "12px",
+  background: "linear-gradient(90deg,#ede7f6,#f3e5f5)",
+  color: "#4a148c",
+  fontWeight: 700,
+  fontSize: "12px",
+  textTransform: "uppercase",
+  fontFamily
+};
+
+const rowStyle = {
+  display: "grid",
+  gridTemplateColumns: "2fr 1fr 1fr 1fr",
+  gap: "10px",
+  padding: "14px",
+  marginTop: "10px",
+  borderRadius: "12px",
+  background: "linear-gradient(135deg, #fffdf5 0%, #fff8e1 50%, #ffecb3 100%)",
+  boxShadow: "0 3px 12px rgba(0,0,0,0.08)",
+  fontFamily,
+  alignItems: "center",
+  border: "1px solid rgba(0,0,0,0.08)",
+  color: "#1f2937"
+};
+
+const statusStyle = (status) => ({
+  padding: "6px 10px",
+  borderRadius: "8px",
+  color: "#fff",
+  fontWeight: 700,
+  fontSize: "12px",
+  textAlign: "center",
+  background:
+    status === "SUCCESS"
+      ? "#2e7d32"
+      : status === "PENDING"
+      ? "#ff9800"
+      : "#e53935"
+});
 
 const Donations = () => {
   const { userRole } = useContext(AuthContext);
   const isAdmin = userRole === "ADMIN" || userRole === "PASTOR";
 
-  const [donations, setDonations] = useState([]);
-  const [myDonations, setMyDonations] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [bankDetails, setBankDetails] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [editingDonation, setEditingDonation] = useState(null);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-
-  // Form state
   const [formData, setFormData] = useState({
-    donor_name: '',
-    amount: '',
-    payment_method: '',
-    transaction_id: ''
+    donor_name: "",
+    amount: "",
+    payment_method: ""
   });
 
-  // Preset donation amounts
-  const presetAmounts = [100, 500, 1000, 2500, 5000];
+  const [donations, setDonations] = useState([]);
+  const [bankDetails, setBankDetails] = useState(null);
+  const [loading, setLoading] = useState(false);
 
+  const [stats, setStats] = useState(null); // ✅ ADDED (safe)
+
+  const [filters, setFilters] = useState({
+    name: "",
+    minAmount: "",
+    maxAmount: "",
+    method: "ALL",
+    status: "ALL"
+  });
+
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success"
+  });
+
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  /* ---------------- LOAD ---------------- */
   useEffect(() => {
     loadData();
+    loadBank();
+
+    if (isAdmin) loadStats(); // ✅ ONLY ADMIN
+
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("success") === "true") {
+      setPaymentSuccess(true);
+      setTimeout(() => loadData(), 500);
+      window.history.replaceState({}, document.title, "/donations");
+    }
   }, []);
 
   const loadData = async () => {
+    const res = await API.get(
+      isAdmin ? "/donations" : "/donations/my-donations"
+    );
+    setDonations(res.data);
+  };
+
+  const loadBank = async () => {
+    const res = await API.get("/donations/info/bank-details");
+    setBankDetails(res.data);
+  };
+
+  /* ---------------- ADMIN STATS ---------------- */
+  const loadStats = async () => {
+    try {
+      const res = await API.get("/donations/stats/summary");
+      setStats(res.data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  /* ---------------- UPI ---------------- */
+  const upiLink =
+    bankDetails?.upi && formData.amount
+      ? `upi://pay?pa=${bankDetails.upi}&pn=Church&am=${formData.amount}&cu=INR`
+      : null;
+
+  const isUPI = formData.payment_method === "UPI";
+
+  /* ---------------- STRIPE ---------------- */
+  const handleStripe = async () => {
     try {
       setLoading(true);
 
-      // Load bank details
-      try {
-        const bankRes = await API.get('/scanner/info/bank-details');
-        setBankDetails(bankRes.data);
-      } catch (error) {
-        console.warn('Could not load bank details');
-      }
+      const stripe = await loadStripe(STRIPE_PUBLIC_KEY);
 
-      // Load user's own donations
-      const myDonationsRes = await API.get('/donations/my-donations');
-      setMyDonations(myDonationsRes.data);
+      const res = await API.post("/donations/create-stripe-session", {
+        donor_name: formData.donor_name,
+        amount: formData.amount,
+        success_url: window.location.origin + "/donations?success=true",
+        cancel_url: window.location.origin + "/donations"
+      });
 
-      // Load all donations if admin
-      if (isAdmin) {
-        const [donationsRes, statsRes] = await Promise.all([
-          API.get('/donations'),
-          API.get('/donations/stats/summary')
-        ]);
-        setDonations(donationsRes.data);
-        setStats(statsRes.data);
+      if (res.data?.url) {
+        window.location.href = res.data.url;
       }
-    } catch (error) {
-      console.error('Error loading donations:', error);
-      setSnackbar({ open: true, message: 'Error loading donations', severity: 'error' });
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: "Stripe failed",
+        severity: "error"
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOpenDialog = (donation = null) => {
-    if (donation) {
-      setEditingDonation(donation);
-      setFormData({
-        donor_name: donation.donor_name,
-        amount: donation.amount,
-        payment_method: donation.payment_method,
-        transaction_id: donation.transaction_id || ''
-      });
-    } else {
-      setEditingDonation(null);
-      setFormData({
-        donor_name: '',
-        amount: '',
-        payment_method: '',
-        transaction_id: ''
-      });
-    }
-    setOpenDialog(true);
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setEditingDonation(null);
-    setFormData({
-      donor_name: '',
-      amount: '',
-      payment_method: '',
-      transaction_id: ''
-    });
-  };
-
+  /* ---------------- SAVE ---------------- */
   const handleSubmit = async () => {
     try {
-      const data = {
+      await API.post("/donations", {
         ...formData,
-        amount: parseFloat(formData.amount)
-      };
+        payment_method:
+          PAYMENT_METHODS[formData.payment_method]?.api || "CASH"
+      });
 
-      if (editingDonation) {
-        // Update donation status (admin only)
-        await API.put(`/donations/${editingDonation.id}/status`, { status: 'SUCCESS' });
-        setSnackbar({ open: true, message: 'Donation status updated', severity: 'success' });
-      } else {
-        // Create new donation
-        await API.post('/donations', data);
-        setSnackbar({ open: true, message: 'Donation submitted successfully!', severity: 'success' });
-      }
+      setSnackbar({
+        open: true,
+        message: "Donation saved",
+        severity: "success"
+      });
 
-      handleCloseDialog();
       loadData();
-    } catch (error) {
-      console.error('Error saving donation:', error);
-      setSnackbar({ open: true, message: 'Error saving donation', severity: 'error' });
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: "Error",
+        severity: "error"
+      });
     }
   };
 
-  const handleDelete = async (donationId) => {
-    if (!window.confirm('Are you sure you want to delete this donation?')) return;
+  /* ---------------- FILTER ---------------- */
+  const filteredDonations = donations.filter((d) => {
+    const nameMatch =
+      d.donor_name?.toLowerCase().includes(filters.name.toLowerCase());
 
-    try {
-      await API.delete(`/donations/${donationId}`);
-      setSnackbar({ open: true, message: 'Donation deleted successfully', severity: 'success' });
-      loadData();
-    } catch (error) {
-      console.error('Error deleting donation:', error);
-      setSnackbar({ open: true, message: 'Error deleting donation', severity: 'error' });
-    }
-  };
+    const amount = parseFloat(d.amount || 0);
 
-  const getPaymentMethodIcon = (method) => {
-    switch (method) {
-      case 'GPAY':
-      case 'PHONEPE':
-        return <PhoneIcon />;
-      case 'CARD':
-        return <CardIcon />;
-      case 'CASH':
-        return <CashIcon />;
-      default:
-        return <PaymentIcon />;
-    }
-  };
+    const minMatch =
+      filters.minAmount === "" || amount >= parseFloat(filters.minAmount);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'SUCCESS':
-        return 'success';
-      case 'PENDING':
-        return 'warning';
-      case 'FAILED':
-        return 'error';
-      default:
-        return 'default';
-    }
-  };
+    const maxMatch =
+      filters.maxAmount === "" || amount <= parseFloat(filters.maxAmount);
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR'
-    }).format(amount);
-  };
+    const methodMatch =
+      filters.method === "ALL" || d.payment_method === filters.method;
 
-  if (loading) {
+    const statusMatch =
+      filters.status === "ALL" || d.status === filters.status;
+
+    return nameMatch && minMatch && maxMatch && methodMatch && statusMatch;
+  });
+
+  /* ---------------- SUCCESS PAGE ---------------- */
+  if (paymentSuccess) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-        <CircularProgress size={60} />
+      <Box sx={{ textAlign: "center", mt: 10 }}>
+        <Typography variant="h4" color="success.main">
+          🎉 Payment Successful
+        </Typography>
+        <Button sx={{ mt: 3 }} onClick={() => setPaymentSuccess(false)}>
+          Back
+        </Button>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: 3, backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
-      <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 2, color: 'primary.main' }}>
-        <DonationIcon fontSize="large" />
-        Church Donations
+    <Box sx={{ p: 3, fontFamily }}>
+
+      <Typography variant="h4" sx={{ mb: 3, color: "#4a148c" }}>
+        <DonationIcon /> Donations
       </Typography>
 
-      {/* Admin Stats */}
+      {/* ================= ADMIN CARDS ================= */}
       {isAdmin && stats && (
-        <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+
           <Grid item xs={12} md={4}>
-            <Card sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+            <Card sx={{ background: "linear-gradient(135deg,#fff8e1,#ffe082)" }}>
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                      {stats.total_donations}
-                    </Typography>
-                    <Typography variant="body2">Total Donations</Typography>
-                  </Box>
-                  <ReceiptIcon sx={{ fontSize: 48, opacity: 0.8 }} />
-                </Box>
+                <Typography>Total Donations</Typography>
+                <Typography variant="h5">
+                  {stats.total_donations}
+                </Typography>
               </CardContent>
             </Card>
           </Grid>
 
           <Grid item xs={12} md={4}>
-            <Card sx={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white' }}>
+            <Card sx={{ background: "linear-gradient(135deg,#e8f5e9,#a5d6a7)" }}>
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                      {formatCurrency(stats.total_amount)}
-                    </Typography>
-                    <Typography variant="body2">Total Amount</Typography>
-                  </Box>
-                  <WalletIcon sx={{ fontSize: 48, opacity: 0.8 }} />
-                </Box>
+                <Typography>Total Amount</Typography>
+                <Typography variant="h5">
+                  ₹{stats.total_amount}
+                </Typography>
               </CardContent>
             </Card>
           </Grid>
 
-          <Grid item xs={12} md={4}>
-            <Card sx={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                      {Object.values(stats.monthly_stats).reduce((a, b) => a + b, 0)}
-                    </Typography>
-                    <Typography variant="body2">This Year</Typography>
-                  </Box>
-                  <AnalyticsIcon sx={{ fontSize: 48, opacity: 0.8 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
         </Grid>
       )}
 
       <Grid container spacing={3}>
-        {/* Donation Form */}
-        <Grid item xs={12} md={6}>
+
+        {/* FORM */}
+        <Grid item xs={12} md={5}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <AddIcon />
-                Make a Donation
-              </Typography>
 
-              {/* Bank Details Section */}
-              {bankDetails && (
-                <Card variant="outlined" sx={{ mb: 3, bgcolor: 'grey.50' }}>
-                  <CardContent sx={{ py: 2 }}>
-                    <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <BankIcon />
-                      Bank Transfer Details
-                    </Typography>
-                    <Grid container spacing={1}>
-                      {bankDetails.bank_name && (
-                        <Grid item xs={12} sm={6}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 'medium', minWidth: '80px' }}>
-                              Bank:
-                            </Typography>
-                            <Typography variant="body2">{bankDetails.bank_name}</Typography>
-                            <IconButton size="small" onClick={() => copyToClipboard(bankDetails.bank_name)}>
-                              <CopyIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        </Grid>
-                      )}
-                      {bankDetails.account_number && (
-                        <Grid item xs={12} sm={6}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 'medium', minWidth: '80px' }}>
-                              Account:
-                            </Typography>
-                            <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                              {bankDetails.account_number}
-                            </Typography>
-                            <IconButton size="small" onClick={() => copyToClipboard(bankDetails.account_number)}>
-                              <CopyIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        </Grid>
-                      )}
-                      {bankDetails.ifsc && (
-                        <Grid item xs={12} sm={6}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 'medium', minWidth: '80px' }}>
-                              IFSC:
-                            </Typography>
-                            <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                              {bankDetails.ifsc}
-                            </Typography>
-                            <IconButton size="small" onClick={() => copyToClipboard(bankDetails.ifsc)}>
-                              <CopyIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        </Grid>
-                      )}
-                      {bankDetails.upi && (
-                        <Grid item xs={12} sm={6}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 'medium', minWidth: '80px' }}>
-                              UPI:
-                            </Typography>
-                            <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                              {bankDetails.upi}
-                            </Typography>
-                            <IconButton size="small" onClick={() => copyToClipboard(bankDetails.upi)}>
-                              <CopyIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() => generateUPIQR(formData.amount)}
-                              disabled={!formData.amount}
-                            >
-                              <QrCodeIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        </Grid>
-                      )}
-                    </Grid>
-                  </CardContent>
-                </Card>
-              )}
+              <TextField
+                label="Name"
+                fullWidth
+                sx={{ mb: 2 }}
+                value={formData.donor_name}
+                onChange={(e) =>
+                  setFormData({ ...formData, donor_name: e.target.value })
+                }
+              />
 
-              {/* Preset Amounts */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Quick Donate:
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  {presetAmounts.map((amount) => (
-                    <Button
-                      key={amount}
-                      variant="outlined"
-                      size="small"
-                      onClick={() => setFormData({ ...formData, amount: amount.toString() })}
-                      sx={{ minWidth: '80px' }}
-                    >
-                      ₹{amount}
-                    </Button>
-                  ))}
-                </Box>
-              </Box>
+              <TextField
+                label="Amount"
+                fullWidth
+                sx={{ mb: 2 }}
+                value={formData.amount}
+                onChange={(e) =>
+                  setFormData({ ...formData, amount: e.target.value })
+                }
+              />
 
-              <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <TextField
-                  label="Your Name"
-                  value={formData.donor_name}
-                  onChange={(e) => setFormData({ ...formData, donor_name: e.target.value })}
-                  required
-                  fullWidth
-                />
-
-                <TextField
-                  label="Amount (₹)"
-                  type="number"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  required
-                  fullWidth
-                  InputProps={{
-                    startAdornment: '₹'
-                  }}
-                />
-
-                <FormControl fullWidth>
-                  <InputLabel>Payment Method</InputLabel>
-                  <Select
-                    value={formData.payment_method}
-                    onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
-                    label="Payment Method"
-                  >
-                    <MenuItem value="GPAY">
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <PhoneIcon /> Google Pay
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="PHONEPE">
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <PhoneIcon /> PhonePe
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="CARD">
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <CardIcon /> Credit/Debit Card
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="CASH">
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <CashIcon /> Cash
-                      </Box>
-                    </MenuItem>
-                  </Select>
-                </FormControl>
-
-                <TextField
-                  label="Transaction ID (Optional)"
-                  value={formData.transaction_id}
-                  onChange={(e) => setFormData({ ...formData, transaction_id: e.target.value })}
-                  fullWidth
-                  helperText="Enter transaction ID for online payments"
-                />
-
-                <Button
-                  variant="contained"
-                  size="large"
-                  onClick={handleSubmit}
-                  disabled={!formData.donor_name || !formData.amount || !formData.payment_method}
-                  sx={{ mt: 2 }}
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>Payment Method</InputLabel>
+                <Select
+                  value={formData.payment_method}
+                  onChange={(e) =>
+                    setFormData({ ...formData, payment_method: e.target.value })
+                  }
                 >
-                  Donate Now
-                </Button>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* My Donations */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                My Donations
-              </Typography>
-
-              {myDonations.length === 0 ? (
-                <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                  No donations yet. Make your first donation!
-                </Typography>
-              ) : (
-                <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
-                  {myDonations.map((donation) => (
-                    <Box key={donation.id} sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                        <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                          {formatCurrency(donation.amount)}
-                        </Typography>
-                        <Chip
-                          label={donation.status}
-                          color={getStatusColor(donation.status)}
-                          size="small"
-                        />
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                        {getPaymentMethodIcon(donation.payment_method)}
-                        <Typography variant="body2" color="text.secondary">
-                          {donation.payment_method}
-                        </Typography>
-                      </Box>
-                      <Typography variant="caption" color="text.secondary">
-                        {new Date(donation.donated_at).toLocaleDateString()}
-                      </Typography>
-                    </Box>
+                  {Object.entries(PAYMENT_METHODS).map(([k, v]) => (
+                    <MenuItem key={k} value={k}>
+                      {v.label}
+                    </MenuItem>
                   ))}
+                </Select>
+              </FormControl>
+
+              {/* UPI QR */}
+              {isUPI && upiLink && (
+                <Box sx={{ textAlign: "center", mb: 2 }}>
+                  <QRCode value={upiLink} size={150} />
+                  <Typography sx={{ fontSize: "13px" }}>
+                    Scan UPI QR
+                  </Typography>
                 </Box>
               )}
+
+              {/* STRIPE BUTTON FIXED */}
+              <Button
+                fullWidth
+                variant="contained"
+                disabled={loading}
+                onClick={() =>
+                  formData.payment_method === "CARD_STRIPE"
+                    ? handleStripe()
+                    : handleSubmit()
+                }
+              >
+                Pay Now
+              </Button>
+
             </CardContent>
           </Card>
         </Grid>
+
+        {/* TABLE */}
+        <Grid item xs={12} md={7}>
+          <Card>
+            <CardContent>
+
+              <Typography sx={{ mb: 2, fontWeight: 700 }}>
+                All Donations
+              </Typography>
+                {/* FILTERS */}
+              <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 2 }}>
+
+                <TextField
+                  size="small"
+                  label="Name"
+                  value={filters.name}
+                  onChange={(e) =>
+                    setFilters({ ...filters, name: e.target.value })
+                  }
+                />
+
+                <TextField
+                  size="small"
+                  label="Min ₹"
+                  type="number"
+                  value={filters.minAmount}
+                  onChange={(e) =>
+                    setFilters({ ...filters, minAmount: e.target.value })
+                  }
+                />
+
+                <TextField
+                  size="small"
+                  label="Max ₹"
+                  type="number"
+                  value={filters.maxAmount}
+                  onChange={(e) =>
+                    setFilters({ ...filters, maxAmount: e.target.value })
+                  }
+                />
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+  <InputLabel>Status</InputLabel>
+  <Select
+    value={filters.status}
+    label="Status"
+    onChange={(e) =>
+      setFilters({ ...filters, status: e.target.value })
+    }
+  >
+    <MenuItem value="ALL">All</MenuItem>
+    <MenuItem value="SUCCESS">Success</MenuItem>
+    <MenuItem value="PENDING">Pending</MenuItem>
+    <MenuItem value="FAILED">Failed</MenuItem>
+  </Select>
+</FormControl>
+
+              </Box>
+
+              {/* HEADER */}
+              <Box sx={headerStyle}>
+                <div>Name</div>
+                <div>Amount</div>
+                <div>Method</div>
+                <div>Status</div>
+              </Box>
+
+              {filteredDonations.map((d) => (
+                <Box key={d.id} sx={rowStyle}>
+                  <div>{d.donor_name}</div>
+                  <div>₹{d.amount}</div>
+                  <div>{d.payment_method}</div>
+                  <div style={statusStyle(d.status)}>
+                    {d.status}
+                  </div>
+                </Box>
+              ))}
+
+            </CardContent>
+          </Card>
+        </Grid>
+
       </Grid>
 
-      {/* Admin Donations Table */}
-      {isAdmin && (
-        <Card sx={{ mt: 4 }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">All Donations</Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => handleOpenDialog()}
-              >
-                Add Donation
-              </Button>
-            </Box>
-
-            <TableContainer component={Paper} sx={{ boxShadow: 'none' }}>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: 'primary.main' }}>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Donor</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Amount</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Payment Method</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Status</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Date</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {donations.map((donation) => (
-                    <TableRow key={donation.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
-                            {donation.donor_name.charAt(0).toUpperCase()}
-                          </Avatar>
-                          <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                            {donation.donor_name}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                        {formatCurrency(donation.amount)}
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          {getPaymentMethodIcon(donation.payment_method)}
-                          <Typography variant="body2">{donation.payment_method}</Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={donation.status}
-                          color={getStatusColor(donation.status)}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {new Date(donation.donated_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <Tooltip title="Edit Status">
-                          <IconButton
-                            color="primary"
-                            onClick={() => handleOpenDialog(donation)}
-                            size="small"
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Delete">
-                          <IconButton
-                            color="error"
-                            onClick={() => handleDelete(donation.id)}
-                            size="small"
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Donation Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {editingDonation ? 'Update Donation Status' : 'Add New Donation'}
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {editingDonation ? (
-              <Alert severity="info">
-                Update the status for donation by {editingDonation.donor_name} of {formatCurrency(editingDonation.amount)}
-              </Alert>
-            ) : (
-              <>
-                <TextField
-                  label="Donor Name"
-                  value={formData.donor_name}
-                  onChange={(e) => setFormData({ ...formData, donor_name: e.target.value })}
-                  required
-                  fullWidth
-                />
-
-                <TextField
-                  label="Amount (₹)"
-                  type="number"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  required
-                  fullWidth
-                />
-
-                <FormControl fullWidth>
-                  <InputLabel>Payment Method</InputLabel>
-                  <Select
-                    value={formData.payment_method}
-                    onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
-                    label="Payment Method"
-                  >
-                    <MenuItem value="GPAY">Google Pay</MenuItem>
-                    <MenuItem value="PHONEPE">PhonePe</MenuItem>
-                    <MenuItem value="CARD">Credit/Debit Card</MenuItem>
-                    <MenuItem value="CASH">Cash</MenuItem>
-                  </Select>
-                </FormControl>
-
-                <TextField
-                  label="Transaction ID"
-                  value={formData.transaction_id}
-                  onChange={(e) => setFormData({ ...formData, transaction_id: e.target.value })}
-                  fullWidth
-                />
-              </>
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={editingDonation ? false : (!formData.donor_name || !formData.amount || !formData.payment_method)}
-          >
-            {editingDonation ? 'Update Status' : 'Submit Donation'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={6000}
+        autoHideDuration={3000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
       >
-        <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
+        <Alert severity={snackbar.severity}>
           {snackbar.message}
         </Alert>
       </Snackbar>
+
     </Box>
   );
 };
