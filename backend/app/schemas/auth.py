@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-
+from typing import Optional
 
 class SendOTP(BaseModel):
     email: EmailStr
@@ -29,3 +29,8 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     token: str
     password: str
+
+class UpdateProfileSchema(BaseModel):
+    # token: Optional[str] = None
+    phone: Optional[str] = None
+    password: Optional[str] = None

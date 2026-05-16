@@ -8,7 +8,8 @@ python-dotenv
 # passlib[bcrypt]
 # passlib[bcrypt] bcrypt==4.0.1
 passlib==1.7.4
-bcrypt==4.1.2
+# bcrypt==4.1.2 # its worked for reset password but not for the update profile, so i am using 4.0.1 for now, will check later
+bcrypt==4.0.1
 python-jose
 redis
 jinja2
