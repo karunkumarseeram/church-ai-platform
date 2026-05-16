@@ -7,7 +7,7 @@ from fastapi import Request  # import Request to get client IP
 from datetime import datetime
 from app.schemas.auth import (
     SendOTP, VerifyOTP, Token, LoginRequest,
-    ForgotPasswordRequest, ResetPasswordRequest
+    ForgotPasswordRequest, ResetPasswordRequest, UpdateProfileSchema
 )
 from app.core.database import get_db
 from app.models.chr_models import User, OTP, RoleEnum, PasswordResetToken
@@ -15,6 +15,7 @@ from app.core.security import hash_password, verify_password, create_access_toke
 from app.services.email_service import send_email, send_reset_email
 from app.services.otp_service import create_otp, verify_otp
 from app.services.email_service import send_welcome_email
+from app.core.security import get_current_user, admin_required
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -143,3 +144,41 @@ def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "Password reset successful"}
+
+
+# -------------------------------
+# 🔹 Get Current User
+# -------------------------------
+@router.get("/me")
+def get_me(current_user: User = Depends(get_current_user)):
+    return {
+        "id": str(current_user.id),
+        "name": current_user.email.split("@")[0],
+        "email": current_user.email,
+        "phone": current_user.phone if hasattr(current_user, "phone") else "",
+        "role": current_user.role.value
+    }
+
+
+@router.put("/update-profile")
+def update_profile(
+    data: UpdateProfileSchema,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+
+    user = db.query(User).filter(User.id == current_user.id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if data.phone:
+        user.phone = data.phone
+
+    if data.password:
+        user.hashed_password = hash_password(data.password)
+
+    db.commit()
+    db.refresh(user)
+
+    return {"message": "Profile updated successfully"}

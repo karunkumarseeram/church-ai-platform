@@ -1,5 +1,5 @@
 import { Box, List, ListItem, ListItemText } from "@mui/material";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 
@@ -13,9 +13,11 @@ import SelfImprovementIcon from "@mui/icons-material/SelfImprovement";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
+import SettingsIcon from "@mui/icons-material/Settings"; // ✅ ADDED
 
 export default function Sidebar() {
   const { userRole } = useContext(AuthContext);
+  const navigate = useNavigate(); // ✅ ADDED
 
   const menuItems = [
     { name: "Dashboard", path: "/dashboard", icon: <DashboardIcon /> },
@@ -29,9 +31,8 @@ export default function Sidebar() {
     { name: "Live", path: "/live", icon: <LiveTvIcon /> },
   ];
 
-  // Filter menu items based on user role
-  const filteredMenuItems = menuItems.filter((item) =>
-    !item.roles || item.roles.includes(userRole)
+  const filteredMenuItems = menuItems.filter(
+    (item) => !item.roles || item.roles.includes(userRole)
   );
 
   return (
@@ -45,6 +46,7 @@ export default function Sidebar() {
         boxShadow: "4px 0 20px rgba(0,0,0,0.1)",
       }}
     >
+      {/* LOGO SECTION (UNCHANGED) */}
       <Box
         sx={{
           p: 3,
@@ -88,6 +90,7 @@ export default function Sidebar() {
         </Box>
       </Box>
 
+      {/* MENU */}
       <List sx={{ px: 2 }}>
         {filteredMenuItems.map((item) => (
           <ListItem
@@ -129,9 +132,40 @@ export default function Sidebar() {
         ))}
       </List>
 
+      {/* ✅ PROFILE SETTINGS BUTTON (ADDED ONLY THIS) */}
       <Box
+        onClick={() => navigate("/profile-settings")}
         sx={{
           mt: "auto",
+          mx: 2,
+          mb: 1,
+          p: 1.5,
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          borderRadius: "12px",
+          cursor: "pointer",
+          background: "rgba(174, 127, 16, 0.7)",
+          transition: "0.3s",
+          "&:hover": {
+            background: "rgba(8, 88, 150, 0.8)",
+            transform: "translateX(4px)",
+          },
+        }}
+      >
+        <SettingsIcon />
+        <ListItemText
+          primary="Profile Settings"
+          primaryTypographyProps={{
+            fontFamily: "'Poppins', sans-serif",
+            fontSize: "0.95rem",
+          }}
+        />
+      </Box>
+
+      {/* FOOTER (UNCHANGED) */}
+      <Box
+        sx={{
           p: 2,
           textAlign: "center",
           fontSize: "0.75rem",

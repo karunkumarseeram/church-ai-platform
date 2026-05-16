@@ -22,7 +22,7 @@ import Layout from "./components/Layout";
 import Prayers from "./pages/Prayers";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-
+import ProfileSettings from "./pages/ProfileSettings";
 function PrivateRoute({ children, allowedRoles = [] }) {
   const { token, userRole } = useContext(AuthContext);
 
@@ -206,7 +206,16 @@ function App() {
                 </PrivateRoute>
               }
             />
-
+            <Route
+                path="/profile-settings"
+                element={
+                  <PrivateRoute allowedRoles={["ADMIN", "PASTOR", "MEMBER"]}>
+                    <Layout mode={mode} toggleTheme={toggleTheme}>
+                      <ProfileSettings />
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
             {/* Catch-All */}
             <Route path="*" element={<Navigate to="/" />} />
 
