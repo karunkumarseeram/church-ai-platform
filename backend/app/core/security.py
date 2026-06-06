@@ -29,14 +29,23 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 # 🔹 JWT token creation
-def create_access_token(data: dict, expires_minutes: int = None) -> str:
+def create_access_token(data: dict, expires_minutes: int = None):
     to_encode = data.copy()
+
     expire = datetime.utcnow() + timedelta(
         minutes=expires_minutes or settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-    return encoded_jwt
+
+    to_encode.update({
+        "exp": expire,
+        "token_version": to_encode.get("token_version", 0)
+    })
+
+    return jwt.encode(
+        to_encode,
+        settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM
+    )
 
 # 🔹 FastAPI dependencies
 security = HTTPBearer()
@@ -52,18 +61,37 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
 ):
+
     token = credentials.credentials
+
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        user_id: str = payload.get("user_id")
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM]
+        )
+
+        user_id = payload.get("user_id")
+
         if not user_id:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-    except:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
     user = db.query(User).filter(User.id == user_id).first()
+
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(status_code=404, detail="User not found")
+
+    token_version = payload.get("token_version", user.token_version)
+
+    if token_version != user.token_version:
+        raise HTTPException(
+            status_code=401,
+            detail="Session expired. Please login again"
+        )
+
     return user
 
 def admin_required(user: User = Depends(get_current_user)):

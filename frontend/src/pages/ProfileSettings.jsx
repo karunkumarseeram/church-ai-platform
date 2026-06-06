@@ -47,34 +47,63 @@ export default function ProfileSettings() {
   }, []);
 
   const handleUpdate = async () => {
-    // ✅ VALIDATION
-    if (profile.newPassword && profile.newPassword !== profile.confirmPassword) {
-      alert("New password and confirm password do not match");
-      return;
+  // Validate passwords
+  if (
+    profile.newPassword &&
+    profile.newPassword !== profile.confirmPassword
+  ) {
+    alert("New password and confirm password do not match");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const res = await API.put("/auth/update-profile", {
+      phone: profile.phone,
+      password: profile.newPassword || undefined,
+    });
+
+    // Password was changed → logout current session
+    if (res.data.force_logout) {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+
+  delete API.defaults.headers.common["Authorization"];
+
+  let count = 10;
+
+  const interval = setInterval(() => {
+    alert(`Password changed. Logging out in ${count} seconds...`);
+
+    count--;
+
+    if (count === 0) {
+      clearInterval(interval);
+      window.location.replace("/login");
     }
+  }, 1000);
 
-    try {
-      setLoading(true);
+  return;
+}
+    // Phone updated only
+    alert("Profile updated successfully");
 
-      await API.put("/auth/update-profile", {
-        phone: profile.phone,
-        password: profile.newPassword ? profile.newPassword : undefined,
-      });
-
-      alert("Profile updated successfully");
-
-      setProfile((p) => ({
-        ...p,
-        newPassword: "",
-        confirmPassword: "",
-      }));
-    } catch (err) {
-      alert("Update failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+    setProfile((prev) => ({
+      ...prev,
+      newPassword: "",
+      confirmPassword: "",
+    }));
+  } catch (err) {
+    console.error(err);
+    alert(
+      err?.response?.data?.detail ||
+        "Failed to update profile"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <Box
       sx={{
