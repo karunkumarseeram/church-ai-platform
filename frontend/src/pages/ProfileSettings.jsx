@@ -5,6 +5,12 @@ import {
   Button,
   Paper,
   Typography,
+  Snackbar,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 
 import { useNavigate } from "react-router-dom";
@@ -25,6 +31,19 @@ export default function ProfileSettings() {
   });
 
   const [loading, setLoading] = useState(false);
+
+  // 🔥 POPUP STATES
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
+  const [logoutCountdown, setLogoutCountdown] = useState(null);
+
+  const showSnackbar = (message, severity = "success") => {
+    setSnackbar({ open: true, message, severity });
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -47,29 +66,65 @@ export default function ProfileSettings() {
   }, []);
 
   const handleUpdate = async () => {
-    // ✅ VALIDATION
-    if (profile.newPassword && profile.newPassword !== profile.confirmPassword) {
-      alert("New password and confirm password do not match");
+    // Validate passwords
+    if (
+      profile.newPassword &&
+      profile.newPassword !== profile.confirmPassword
+    ) {
+      showSnackbar("Passwords do not match", "error");
       return;
     }
 
     try {
       setLoading(true);
 
-      await API.put("/auth/update-profile", {
+      const res = await API.put("/auth/update-profile", {
         phone: profile.phone,
-        password: profile.newPassword ? profile.newPassword : undefined,
+        password: profile.newPassword || undefined,
       });
 
-      alert("Profile updated successfully");
+      // 🔥 PASSWORD CHANGE → LOGOUT ALL DEVICES
+      if (res.data.force_logout) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
 
-      setProfile((p) => ({
-        ...p,
+        delete API.defaults.headers.common["Authorization"];
+
+        showSnackbar(
+          "Password updated. Logging out from all devices...",
+          "warning"
+        );
+
+        let count = 10;
+        setLogoutCountdown(count);
+
+        const interval = setInterval(() => {
+          count--;
+          setLogoutCountdown(count);
+
+          if (count === 0) {
+            clearInterval(interval);
+            window.location.replace("/login");
+          }
+        }, 1000);
+
+        return;
+      }
+
+      // PROFILE UPDATED SUCCESS
+      showSnackbar("Profile updated successfully", "success");
+
+      setProfile((prev) => ({
+        ...prev,
         newPassword: "",
         confirmPassword: "",
       }));
     } catch (err) {
-      alert("Update failed");
+      console.error(err);
+      showSnackbar(
+        err?.response?.data?.detail || "Failed to update profile",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -79,16 +134,13 @@ export default function ProfileSettings() {
     <Box
       sx={{
         minHeight: "100vh",
-        background: "linear-gradient(135deg,#1E1B4B,#312E81)",     
-      p: 4,
+        background: "linear-gradient(135deg,#1E1B4B,#312E81)",
+        p: 4,
       }}
     >
       {/* HEADER */}
       <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate(-1)}
-        >
+        <Button startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}>
           Back
         </Button>
 
@@ -108,7 +160,6 @@ export default function ProfileSettings() {
       >
         {/* FORM */}
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          
           <TextField
             label="Name"
             value={profile.name}
@@ -135,7 +186,6 @@ export default function ProfileSettings() {
             variant="filled"
           />
 
-          {/* NEW PASSWORD */}
           <TextField
             label="New Password"
             type="password"
@@ -147,7 +197,6 @@ export default function ProfileSettings() {
             variant="filled"
           />
 
-          {/* CONFIRM PASSWORD */}
           <TextField
             label="Confirm Password"
             type="password"
@@ -185,6 +234,41 @@ export default function ProfileSettings() {
           </Button>
         </Box>
       </Paper>
+
+      {/* 🔥 SNACKBAR POPUP */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
+          severity={snackbar.severity}
+          variant="filled"
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
+      {/* 🔥 LOGOUT COUNTDOWN POPUP */}
+      <Dialog open={logoutCountdown !== null}>
+        <DialogTitle>Security Logout</DialogTitle>
+
+        <DialogContent>
+          You will be logged out from all devices in{" "}
+          <b>{logoutCountdown}</b> seconds.
+        </DialogContent>
+
+        <DialogActions>
+          <Button
+            color="error"
+            onClick={() => window.location.replace("/login")}
+          >
+            Logout Now
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

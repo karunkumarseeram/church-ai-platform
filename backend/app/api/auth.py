@@ -24,25 +24,34 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 # -------------------------------
 @router.post("/signup", response_model=Token)
 def signup(user: LoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+
     db_user = db.query(User).filter(User.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     hashed = hash_password(user.password)
+
     new_user = User(
         email=user.email,
         hashed_password=hashed,
         role=RoleEnum.MEMBER,
         is_active=True,
-        is_approved=False
+        is_approved=False,
+        token_version=0
     )
+
     db.add(new_user)
     db.commit()
+    # db.refresh(new_user)
 
-    # send welcome email asynchronously
     background_tasks.add_task(send_welcome_email, new_user.email, new_user.email)
 
-    access_token = create_access_token({"user_id": str(new_user.id), "role": new_user.role.value})
+    access_token = create_access_token({
+        "user_id": str(new_user.id),
+        "role": new_user.role.value,
+        "token_version": new_user.token_version
+    })
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 # -------------------------------
@@ -52,23 +61,28 @@ def signup(user: LoginRequest, background_tasks: BackgroundTasks, db: Session = 
 
 @router.post("/login", response_model=Token)
 def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)):
-    # 1️⃣ Find user
+
     user = db.query(User).filter(User.email == data.email).first()
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
     if not verify_password(data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
+
     if not user.is_approved:
         raise HTTPException(status_code=403, detail="User not approved")
 
-    # 2️⃣ Capture last login time and IP
     user.last_login = datetime.utcnow()
-    # Use client host IP from request
     user.last_login_ip = request.client.host
     db.commit()
 
-    # 3️⃣ Generate token
-    access_token = create_access_token({"user_id": str(user.id), "role": user.role.value})
+    access_token = create_access_token({
+        "user_id": str(user.id),
+        "role": user.role.value,
+        "token_version": user.token_version
+    })
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 # -------------------------------
@@ -88,14 +102,21 @@ def send_otp_route(data: SendOTP, db: Session = Depends(get_db)):
 
 @router.post("/verify-otp", response_model=Token)
 def verify_otp_route(data: VerifyOTP, db: Session = Depends(get_db)):
+
     if not verify_otp(db, data.email, data.otp):
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
     user = db.query(User).filter(User.email == data.email).first()
+
     if not user.is_approved:
         raise HTTPException(status_code=403, detail="User not approved")
 
-    access_token = create_access_token({"user_id": str(user.id), "role": user.role.value})
+    access_token = create_access_token({
+        "user_id": str(user.id),
+        "role": user.role.value,
+        "token_version": user.token_version
+    })
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 # -------------------------------
@@ -175,10 +196,18 @@ def update_profile(
     if data.phone:
         user.phone = data.phone
 
+    password_changed = False
+
     if data.password:
         user.hashed_password = hash_password(data.password)
 
-    db.commit()
-    db.refresh(user)
+        # 🔥 LOGOUT ALL DEVICES
+        user.token_version += 1
+        password_changed = True
 
-    return {"message": "Profile updated successfully"}
+    db.commit()
+
+    return {
+        "message": "Profile updated successfully",
+        "force_logout": password_changed
+    }

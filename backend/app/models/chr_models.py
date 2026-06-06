@@ -61,6 +61,7 @@ class User(Base, BaseModel):
 
     last_login = Column(DateTime(timezone=True), nullable=True)
     last_login_ip = Column(String)
+    token_version = Column(Integer, default=0, nullable=False)
 
     # ✅ Relationships
     donations = relationship("Donation", back_populates="user")
