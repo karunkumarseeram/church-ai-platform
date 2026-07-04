@@ -23,6 +23,8 @@ import Prayers from "./pages/Prayers";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ProfileSettings from "./pages/ProfileSettings";
+import Feedback from "./pages/Feedback";
+import AdminFeedback from "./pages/AdminFeedback";
 function PrivateRoute({ children, allowedRoles = [] }) {
   const { token, userRole } = useContext(AuthContext);
 
@@ -206,6 +208,8 @@ function App() {
                 </PrivateRoute>
               }
             />
+            <Route path="/feedback" element={<Feedback />} />
+            <Route path="/admin/feedback" element={<AdminFeedback />} />
             <Route
                 path="/profile-settings"
                 element={
