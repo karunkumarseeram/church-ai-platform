@@ -98,6 +98,6 @@ def delete_feedback(db: Session, feedback_id):
     if not feedback:
         return False
 
-    feedback.is_deleted = False
+    feedback.is_deleted = True
     db.commit()
     return True
