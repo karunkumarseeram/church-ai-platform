@@ -24,11 +24,14 @@ export default function Sidebar() {
     { name: "Members", path: "/members", icon: <PeopleIcon />, roles: ["ADMIN"] },
     { name: "Events", path: "/events", icon: <EventIcon /> },
     { name: "Donations", path: "/donations", icon: <VolunteerActivismIcon /> },
+    { name: "Feedback", path: "/feedback", icon: <VolunteerActivismIcon /> },
+    { name: "Feedback Admin", path: "/admin/feedback", icon: <AdminPanelSettingsIcon />, roles: ["ADMIN"] },
     { name: "Scanner", path: "/scanner", icon: <QrCodeScannerIcon />, roles: ["ADMIN", "PASTOR"] },
     { name: "Bible", path: "/bible", icon: <MenuBookIcon /> },
     { name: "Bible Manager", path: "/bible-manager", icon: <AdminPanelSettingsIcon />, roles: ["ADMIN"] },
     { name: "Prayer Requests", path: "/prayers", icon: <SelfImprovementIcon /> },
     { name: "Live", path: "/live", icon: <LiveTvIcon /> },
+    
   ];
 
   const filteredMenuItems = menuItems.filter(
