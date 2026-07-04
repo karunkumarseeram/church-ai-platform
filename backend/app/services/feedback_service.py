@@ -91,7 +91,6 @@ def reply_feedback(db: Session, feedback_id, payload: FeedbackReply):
     db.refresh(feedback)
     return feedback
 
-
 # ================= DELETE (SOFT DELETE) =================
 def delete_feedback(db: Session, feedback_id):
     feedback = get_feedback(db, feedback_id)
