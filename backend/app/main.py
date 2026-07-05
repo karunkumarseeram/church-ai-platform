@@ -5,13 +5,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="FFT Church API")
 
-# ✅ CORS setup
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "http://localhost:5174",
-    "http://127.0.0.1:5174",
+    "https://churchplatform.karunkumarseeram.workers.dev/",
+    "https://church-ai-platform.onrender.com/"
 ]
+
 
 app.add_middleware(
     CORSMiddleware,
