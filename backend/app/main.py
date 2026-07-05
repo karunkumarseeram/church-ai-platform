@@ -8,8 +8,8 @@ app = FastAPI(title="FFT Church API")
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://churchplatform.karunkumarseeram.workers.dev/",
-    "https://church-ai-platform.onrender.com/"
+    "https://churchplatform.karunkumarseeram.workers.dev",
+    "https://church-ai-platform.onrender.com"
 ]
 
 
