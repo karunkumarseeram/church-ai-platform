@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from jinja2 import Template
-
+from app.core.config import settings
 # Load env
 load_dotenv()
 
@@ -57,6 +57,11 @@ def send_welcome_email(to_email, name):
 
     template = Template(html_content)
     rendered_html = template.render(name=name)
+    # ✅ PASS FRONTEND URL HERE
+    rendered_html = template.render(
+        name=name,
+        frontend_url=settings.FRONTEND_URL
+    )
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = "Welcome to FFT Church 🙏"

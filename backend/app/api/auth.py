@@ -16,6 +16,7 @@ from app.services.email_service import send_email, send_reset_email
 from app.services.otp_service import create_otp, verify_otp
 from app.services.email_service import send_welcome_email
 from app.core.security import get_current_user, admin_required
+from app.core.config import settings
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -151,7 +152,9 @@ def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     db.add(reset_token)
     db.commit()
 
-    reset_link = f"http://localhost:5173/reset-password?token={token}"
+    # reset_link = f"http://localhost:5173/reset-password?token={token}"
+    reset_link = f"{settings.FRONTEND_URL_RESET_PASSWORD}?token={token}"
+
     send_reset_email(user.email, reset_link)
 
     return {"message": "Password reset email sent"}
