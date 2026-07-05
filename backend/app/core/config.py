@@ -1,58 +1,106 @@
 import os
 from typing import Optional
-from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from urllib.parse import quote_plus
-import os
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-ENV_PATH = os.path.join(BASE_DIR, ".env")
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+BASE_DIR = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+# ✅ ENV is decided first (VERY IMPORTANT)
+ENV = os.getenv("ENV", "dev")
+
+# ✅ Choose env file
+ENV_PATH = (
+    os.path.join(BASE_DIR, ".env.prod")
+    if ENV == "prod"
+    else os.path.join(BASE_DIR, ".env.dev")
+)
+
+
 class Settings(BaseSettings):
-    # ================= ENV =================
+
+    # ==========================
+    # ENV
+    # ==========================
     ENV: str = "dev"
 
-    # ================= DB =================
-    DB_USER: str
-    DB_PASSWORD: str
+    # ==========================
+    # DEV DB (local postgres)
+    # ==========================
+    DB_USER: Optional[str] = None
+    DB_PASSWORD: Optional[str] = None
     DB_HOST: str = "localhost"
     DB_PORT: int = 5432
-    DEV_DB_NAME: str
-    PROD_DB_NAME: str
+    DEV_DB_NAME: Optional[str] = None
 
-    # ================= SECURITY =================
+    # ==========================
+    # PROD DB (Neon)
+    # ==========================
+    PROD_DATABASE_URL: Optional[str] = None
+
+    # ==========================
+    # SECURITY
+    # ==========================
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
-    # ================= REDIS =================
-    REDIS_URL: Optional[str] = None  # <- optional now
+    # ==========================
+    # OPTIONAL
+    # ==========================
+    REDIS_URL: Optional[str] = None
+    RAZORPAY_KEY: Optional[str] = None
+    RAZORPAY_SECRET: Optional[str] = None
 
-    # ================= PAYMENTS =================
-    RAZORPAY_KEY: Optional[str] = None  # <- optional now
-    RAZORPAY_SECRET: Optional[str] = None  # <- optional now
-
-    # ================= BANK DETAILS =================
     BANK_NAME: Optional[str] = None
     ACCOUNT_NUMBER: Optional[str] = None
     IFSC: Optional[str] = None
     UPI: Optional[str] = None
 
-    # ================= Pydantic Config =================
+    ADMIN_EMAIL: Optional[str] = None
+    ADMIN_PASSWORD: Optional[str] = None
+
     model_config = SettingsConfigDict(
-        env_file=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env"),
+        env_file=ENV_PATH,
         env_file_encoding="utf-8",
-        extra="ignore"
+        extra="ignore",
     )
 
-    # ================= DB URL =================
+    # ==========================
+    # DATABASE SWITCH LOGIC
+    # ==========================
     @property
     def DATABASE_URL(self) -> str:
-        db_name = self.DEV_DB_NAME if self.ENV == "dev" else self.PROD_DB_NAME
-        password = quote_plus(self.DB_PASSWORD)
-        return f"postgresql://{self.DB_USER}:{password}@{self.DB_HOST}:{self.DB_PORT}/{db_name}"
 
-# ✅ Load settings
+        # ================= DEV =================
+        if self.ENV == "dev":
+
+            password = quote_plus(self.DB_PASSWORD or "")
+
+            return (
+                f"postgresql://"
+                f"{self.DB_USER}:{password}"
+                f"@{self.DB_HOST}:{self.DB_PORT}"
+                f"/{self.DEV_DB_NAME}"
+            )
+
+        # ================= PROD =================
+        if self.ENV == "prod":
+
+            if not self.PROD_DATABASE_URL:
+                raise ValueError("PROD_DATABASE_URL is missing in .env.prod")
+
+            return self.PROD_DATABASE_URL
+
+        raise ValueError("ENV must be either 'dev' or 'prod'")
+
+
 settings = Settings()
 
-# 🔍 Debug (remove in production)
-print("✅ Loaded ENV:", settings.ENV)
-print("📁 .env path:", ENV_PATH)
-# print("🛢️ DB:", settings.DATABASE_URL)
+print("===================================")
+print("ENV :", settings.ENV)
+print("DB  :", settings.DATABASE_URL)
+print("===================================")
