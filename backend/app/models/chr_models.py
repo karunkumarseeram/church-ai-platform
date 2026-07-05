@@ -195,7 +195,7 @@ class AdminActionLog(Base, BaseModel):
 
 
 # ================= OTP TABLE =================
-class OTP(Base, BaseModel):
+class OTPS(Base, BaseModel):
     __tablename__ = "otps"
 
     email = Column(String, index=True)

@@ -10,6 +10,11 @@ class VerifyOTP(BaseModel):
     otp: str
 
 
+class SignupRequest(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    phone: str | None = None
 # ✅ ADD THIS
 class LoginRequest(BaseModel):
     email: EmailStr

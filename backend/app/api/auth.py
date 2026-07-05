@@ -7,10 +7,10 @@ from fastapi import Request  # import Request to get client IP
 from datetime import datetime
 from app.schemas.auth import (
     SendOTP, VerifyOTP, Token, LoginRequest,
-    ForgotPasswordRequest, ResetPasswordRequest, UpdateProfileSchema
+    ForgotPasswordRequest, ResetPasswordRequest, UpdateProfileSchema,SignupRequest
 )
 from app.core.database import get_db
-from app.models.chr_models import User, OTP, RoleEnum, PasswordResetToken
+from app.models.chr_models import User, OTPS, RoleEnum, PasswordResetToken
 from app.core.security import hash_password, verify_password, create_access_token
 from app.services.email_service import send_email, send_reset_email
 from app.services.otp_service import create_otp, verify_otp
@@ -23,16 +23,23 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 # 🔹 Signup
 # -------------------------------
 @router.post("/signup", response_model=Token)
-def signup(user: LoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def signup(
+    user: SignupRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
 
     db_user = db.query(User).filter(User.email == user.email).first()
+
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     hashed = hash_password(user.password)
 
     new_user = User(
+        name=user.name,
         email=user.email,
+        phone=user.phone,
         hashed_password=hashed,
         role=RoleEnum.MEMBER,
         is_active=True,
@@ -44,7 +51,11 @@ def signup(user: LoginRequest, background_tasks: BackgroundTasks, db: Session = 
     db.commit()
     # db.refresh(new_user)
 
-    background_tasks.add_task(send_welcome_email, new_user.email, new_user.email)
+    background_tasks.add_task(
+        send_welcome_email,
+        new_user.email,
+        new_user.name
+    )
 
     access_token = create_access_token({
         "user_id": str(new_user.id),
@@ -52,7 +63,10 @@ def signup(user: LoginRequest, background_tasks: BackgroundTasks, db: Session = 
         "token_version": new_user.token_version
     })
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
 
 # -------------------------------
 # 🔹 Password login
