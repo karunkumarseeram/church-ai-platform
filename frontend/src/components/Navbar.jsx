@@ -53,91 +53,67 @@ export default function Navbar({ toggleTheme, mode }) {
         transition: "all 0.3s ease",
       }}
     >
-      {/* Scrolling Container */}
-      <Box
-        sx={{
-          position: "relative",
-          overflow: "hidden",
-          whiteSpace: "nowrap",
-          width: "70%",
-          "&::before, &::after": {
-            content: '""',
-            position: "absolute",
-            top: 0,
-            width: 60,
-            height: "100%",
-            zIndex: 2,
-          },
-          "&::before": {
-            left: 0,
-            background: `linear-gradient(to right, ${theme.palette.background.default} 20%, transparent)`,
-          },
-          "&::after": {
-            right: 0,
-            background: `linear-gradient(to left, ${theme.palette.background.default} 20%, transparent)`,
-          },
-        }}
-      >
+      {/* LEFT SECTION */}
+      <Box sx={{ display: "flex", alignItems: "center", width: "70%" }}>
+        
+        {/* STATIC TITLE */}
+        <Typography
+          component="span"
+          sx={{
+            fontSize: "1.45rem",
+            fontWeight: 800,
+            fontFamily: "'Cinzel Decorative', cursive",
+            letterSpacing: "2px",
+            background:
+              "linear-gradient(90deg, #FFD700, #FFB347, #FF416C, #FF4B2B, #FFD700)",
+            backgroundSize: "300% 100%",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            animation: "gradientShift 8s ease infinite",
+            textShadow: "0 0 10px rgba(255,215,0,0.6)",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Faith Fellowship Temple — With HIM ✝️
+        </Typography>
+
+        {/* SCROLLING VERSE */}
         <Box
           sx={{
-            display: "inline-block",
+            ml: 5,
+            overflow: "hidden",
             whiteSpace: "nowrap",
-            animation: "marquee 20s linear infinite",
-            "@keyframes marquee": {
-              "0%": { transform: "translateX(100%)" },
-              "100%": { transform: "translateX(-100%)" },
+            flex: 1,
+            position: "relative",
+            "&::before, &::after": {
+              content: '""',
+              position: "absolute",
+              top: 0,
+              width: 60,
+              height: "100%",
+              zIndex: 2,
+            },
+            "&::before": {
+              left: 0,
+              background: `linear-gradient(to right, ${theme.palette.background.default} 20%, transparent)`,
+            },
+            "&::after": {
+              right: 0,
+              background: `linear-gradient(to left, ${theme.palette.background.default} 20%, transparent)`,
             },
           }}
         >
-          {/* Church Title */}
           <Typography
             component="span"
             sx={{
-              fontSize: "1.45rem",
-              fontWeight: 800,
-              fontFamily: "'Cinzel Decorative', cursive",
-              letterSpacing: "2px",
-              background:
-                "linear-gradient(90deg, #FFD700, #FFB347, #FF416C, #FF4B2B, #FFD700)",
-              backgroundSize: "300% 100%",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              animation: "gradientShift 8s ease infinite",
-              textShadow: "0 0 10px rgba(255,215,0,0.6)",
-            }}
-          >
-            Faith Fellowship Temple — With HIM{" "}
-            <Box
-              component="span"
-              sx={{
-                fontSize: "1.6rem",
-                fontWeight: "bold",
-                display: "inline-block",
-                background:
-                  "linear-gradient(90deg, #FFD700, #FFB347, #FF416C, #FF4B2B, #FFD700)",
-                backgroundSize: "300% 100%",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                animation: "gradientShift 8s ease infinite, pulse 2s infinite",
-                textShadow: "0 0 15px #FFD700, 0 0 20px #FFA500",
-              }}
-            >
-              "We Proclaim"
-            </Box>{" "}
-            ✝️
-          </Typography>
-
-          {/* Bible Verse */}
-          <Typography
-            component="span"
-            sx={{
-              ml: 5,
+              display: "inline-block",
               fontSize: "1rem",
               fontFamily: "'Inter', sans-serif",
               fontWeight: 500,
               fontStyle: "italic",
               color: verseColor,
-              letterSpacing: "0.5px",
+              animation: "marquee 20s linear infinite",
+              whiteSpace: "nowrap",
             }}
           >
             {verse}
@@ -145,14 +121,12 @@ export default function Navbar({ toggleTheme, mode }) {
         </Box>
       </Box>
 
-      {/* Right Controls */}
+      {/* RIGHT CONTROLS */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-        {/* Theme Toggle */}
         <IconButton onClick={toggleTheme} sx={{ color: theme.palette.text.primary }}>
           {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
         </IconButton>
 
-        {/* Logout */}
         <Button
           onClick={handleLogout}
           sx={{
@@ -163,7 +137,6 @@ export default function Navbar({ toggleTheme, mode }) {
             py: 1,
             fontWeight: 700,
             fontFamily: "'Inter', sans-serif",
-            letterSpacing: "0.5px",
             textTransform: "none",
             boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
             transition: "0.3s",
@@ -177,12 +150,12 @@ export default function Navbar({ toggleTheme, mode }) {
         </Button>
       </Box>
 
+      {/* ANIMATIONS */}
       <style>
         {`
-          @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
+          @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
           }
 
           @keyframes gradientShift {
