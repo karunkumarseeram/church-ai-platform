@@ -3,7 +3,7 @@ import axios from "axios";
 const API = axios.create({
   // baseURL: "http://localhost:8000", // FastAPI backend
   // withCredentials: true, // only if you plan to send cookies
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000", // FastAPI backend
+  baseURL: import.meta.env.VITE_API_URL,// FastAPI backend
 });
 
 // attach token automatically
