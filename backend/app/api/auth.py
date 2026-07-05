@@ -49,7 +49,7 @@ def signup(
 
     db.add(new_user)
     db.commit()
-    # db.refresh(new_user)
+    db.refresh(new_user)
 
     background_tasks.add_task(
         send_welcome_email,
