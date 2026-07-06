@@ -13,7 +13,8 @@ class Settings(BaseSettings):
     # FRONTEND_URL_LOCAL: str = "http://localhost:5173"
     FRONTEND_URL: str = "https://churchplatform.karunkumarseeram.workers.dev"
     # FRONTEND_URL_LOCAL: str = "http://localhost:5173"
-
+    EMAIL_USER: str | None = None
+    EMAIL_PASSWORD: str | None = None
     # ================= LOCAL DB =================
     DB_USER: Optional[str] = None
     DB_PASSWORD: Optional[str] = None

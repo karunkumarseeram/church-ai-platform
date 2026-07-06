@@ -6,10 +6,12 @@ from email.mime.multipart import MIMEMultipart
 from jinja2 import Template
 from app.core.config import settings
 # Load env
-load_dotenv()
+# load_dotenv()
 
-EMAIL_USER = os.getenv("EMAIL_USER")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+# EMAIL_USER = os.getenv("EMAIL_USER")
+# EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+EMAIL_USER = settings.EMAIL_USER
+EMAIL_PASSWORD = settings.EMAIL_PASSWORD
 
 
 # ✅ OTP EMAIL (UPDATED → NOW HTML, SAME FUNCTION NAME)
