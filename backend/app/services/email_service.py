@@ -1,35 +1,75 @@
 import resend
+import os
+from jinja2 import Template
 from app.core.config import settings
 
 resend.api_key = settings.RESEND_API_KEY
 
 
+# ---------------- LOAD TEMPLATE HELPER ----------------
+def render_template(template_path: str, context: dict):
+    with open(template_path, "r", encoding="utf-8") as file:
+        html = file.read()
+    return Template(html).render(**context)
+
+
+# ---------------- OTP EMAIL ----------------
 def send_email(to_email, otp):
+
+    template_path = os.path.join(
+        os.path.dirname(__file__),
+        "../templates/otp_email.html"
+    )
+
+    html = render_template(template_path, {"otp": otp})
+
     resend.Emails.send({
         "from": "FFT Church <onboarding@resend.dev>",
         "to": [to_email],
         "subject": "HIM We Proclaim OTP",
-        "html": f"<h2>Your OTP is {otp}</h2>"
+        "html": html
     })
 
 
+# ---------------- WELCOME EMAIL ----------------
 def send_welcome_email(to_email, name):
+
+    template_path = os.path.join(
+        os.path.dirname(__file__),
+        "../templates/welcome_email.html"
+    )
+
+    html = render_template(template_path, {
+        "name": name,
+        "frontend_url": settings.FRONTEND_URL
+    })
+
     resend.Emails.send({
         "from": "FFT Church <onboarding@resend.dev>",
         "to": [to_email],
         "subject": "Welcome to FFT Church 🙏",
-        "html": f"<h2>Welcome {name}</h2>"
+        "html": html
     })
 
 
+# ---------------- RESET PASSWORD ----------------
 def send_reset_email(to_email, reset_link):
+
+    template_path = os.path.join(
+        os.path.dirname(__file__),
+        "../templates/reset_password.html"
+    )
+
+    html = render_template(template_path, {
+        "reset_link": reset_link
+    })
+
     resend.Emails.send({
         "from": "FFT Church <onboarding@resend.dev>",
         "to": [to_email],
-        "subject": "Reset Password",
-        "html": f'<a href="{reset_link}">Reset Password</a>'
+        "subject": "Reset Your Password",
+        "html": html
     })
-
 
 
 
