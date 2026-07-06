@@ -24,7 +24,7 @@ def send_email(to_email, otp):
     html = render_template(template_path, {"otp": otp})
 
     resend.Emails.send({
-        "from": "FFT Church <noreply@fftchurch.com>",
+        "from": "FFT Church <onboarding@resend.dev>",
         "to": [to_email],
         "subject": "HIM We Proclaim OTP",
         "html": html
@@ -45,7 +45,7 @@ def send_welcome_email(to_email, name):
     })
 
     resend.Emails.send({
-        "from": "FFT Church <noreply@fftchurch.com>",
+        "from": "FFT Church <onboarding@resend.dev>",
         "to": [to_email],
         "subject": "Welcome to FFT Church 🙏",
         "html": html
@@ -65,7 +65,7 @@ def send_reset_email(to_email, reset_link):
     })
 
     resend.Emails.send({
-        "from": "FFT Church <noreply@fftchurch.com>",
+        "from": "FFT Church <onboarding@resend.dev>",
         "to": [to_email],
         "subject": "Reset Your Password",
         "html": html
