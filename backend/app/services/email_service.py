@@ -48,6 +48,7 @@ def send_email(to_email, otp):
 
 
 # ✅ WELCOME EMAIL (NO CHANGE)
+# ✅ WELCOME EMAIL (FIXED)
 def send_welcome_email(to_email, name):
     template_path = os.path.join(
         os.path.dirname(__file__),
@@ -58,8 +59,7 @@ def send_welcome_email(to_email, name):
         html_content = file.read()
 
     template = Template(html_content)
-    rendered_html = template.render(name=name)
-    # ✅ PASS FRONTEND URL HERE
+
     rendered_html = template.render(
         name=name,
         frontend_url=settings.FRONTEND_URL
