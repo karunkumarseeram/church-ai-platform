@@ -8,8 +8,10 @@ from app.core.config import settings
 # Load env
 # load_dotenv()
 
-EMAIL_USER = os.getenv("EMAIL_USER")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+# EMAIL_USER = os.getenv("EMAIL_USER")
+# EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+EMAIL_USER = settings.EMAIL_USER
+EMAIL_PASSWORD = settings.EMAIL_PASSWORD
 
 
 # ✅ OTP EMAIL (UPDATED → NOW HTML, SAME FUNCTION NAME)
