@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     # FRONTEND_URL_LOCAL: str = "http://localhost:5173"
     EMAIL_USER: str | None = None
     EMAIL_PASSWORD: str | None = None
+    RESEND_API_KEY: str | None = None
     # ================= LOCAL DB =================
     DB_USER: Optional[str] = None
     DB_PASSWORD: Optional[str] = None

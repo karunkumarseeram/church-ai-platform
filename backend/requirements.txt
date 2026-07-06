@@ -24,3 +24,4 @@ Pillow
 pyzbar
 opencv-python
 stripe
+resend
