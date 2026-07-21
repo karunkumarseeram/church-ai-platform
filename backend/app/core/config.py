@@ -9,10 +9,10 @@ class Settings(BaseSettings):
 
     # ================= ENV =================
     ENV: str = "dev"
-    FRONTEND_URL_RESET_PASSWORD: str = "https://churchplatform.karunkumarseeram.workers.dev/reset-password"
-    # FRONTEND_URL_LOCAL: str = "http://localhost:5173"
-    FRONTEND_URL: str = "https://churchplatform.karunkumarseeram.workers.dev"
-    # FRONTEND_URL_LOCAL: str = "http://localhost:5173"
+    # FRONTEND_URL_RESET_PASSWORD: str = "https://churchplatform.karunkumarseeram.workers.dev/reset-password"
+    FRONTEND_URL_LOCAL: str = "http://localhost:5173"
+    # FRONTEND_URL: str = "https://churchplatform.karunkumarseeram.workers.dev"
+    FRONTEND_URL_LOCAL: str = "http://localhost:5173"
     EMAIL_USER: str | None = None
     EMAIL_PASSWORD: str | None = None
     RESEND_API_KEY: str | None = None

@@ -74,7 +74,7 @@ export default function Navbar({ toggleTheme, mode }) {
             whiteSpace: "nowrap",
           }}
         >
-          Faith Fellowship Temple — With HIM ✝️
+          Faith Fellowship Temple — "HIM We Proclaim"
         </Typography>
 
         {/* SCROLLING VERSE */}
