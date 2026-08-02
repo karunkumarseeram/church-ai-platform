@@ -1,10 +1,10 @@
 from datetime import datetime
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
-from app.models.chr_models import Feedback,FeedbackStatus
+from app.models.chr_models import Feedback,FeedbackReply,FeedbackStatus
 from app.schemas.feedback import (
     FeedbackCreate,
-    FeedbackReply,
+    FeedbackReplyCreate,
     FeedbackStatusUpdate,
 )
 
@@ -35,20 +35,34 @@ def create_feedback(db: Session, payload: FeedbackCreate, user_id=None, ip_addre
 
 # ================= GET SINGLE =================
 def get_feedback(db: Session, feedback_id):
-    return db.query(Feedback).filter(Feedback.id == feedback_id, Feedback.is_deleted == False).first()
+    return (
+        db.query(Feedback)
+        .options(joinedload(Feedback.replies))
+        .filter(
+            Feedback.id == feedback_id,
+            Feedback.is_deleted == False
+        )
+        .first()
+    )
 
 
 # ================= USER FEEDBACK =================
 def get_user_feedbacks(db: Session, user_id):
-    return db.query(Feedback).filter(
-        Feedback.user_id == user_id,
-        Feedback.is_deleted == False
-    ).order_by(Feedback.created_at.desc()).all()
+    return (
+        db.query(Feedback)
+        .options(joinedload(Feedback.replies))
+        .filter(
+            Feedback.user_id == user_id,
+            Feedback.is_deleted == False
+        )
+        .order_by(Feedback.created_at.desc())
+        .all()
+    )
 
 
 # ================= ADMIN LIST (WITH PAGINATION) =================
 def get_all_feedbacks(db: Session, skip=0, limit=20, status=None):
-    query = db.query(Feedback).filter(Feedback.is_deleted == False)
+    query = db.query(Feedback).options(joinedload(Feedback.replies)).filter(Feedback.is_deleted == False)
 
     if status:
         query = query.filter(Feedback.status == status)
@@ -78,17 +92,33 @@ def update_feedback_status(db: Session, feedback_id, payload: FeedbackStatusUpda
 
 
 # ================= ADMIN REPLY =================
-def reply_feedback(db: Session, feedback_id, payload: FeedbackReply):
+def reply_feedback(
+    db: Session,
+    feedback_id,
+    payload: FeedbackReplyCreate,
+    admin_id,
+):
     feedback = get_feedback(db, feedback_id)
+
     if not feedback:
         return None
 
-    feedback.admin_reply = payload.admin_reply
-    feedback.replied_at = datetime.utcnow()
+    reply_text = payload.reply_text if hasattr(payload, "reply_text") else (payload.message or "")
+
+    reply = FeedbackReply(
+        feedback_id=feedback.id,
+        admin_id=admin_id,
+        message=reply_text,
+    )
+
+    db.add(reply)
+
     feedback.status = FeedbackStatus.REVIEWED
+    feedback.replied_at = datetime.utcnow()
 
     db.commit()
     db.refresh(feedback)
+
     return feedback
 
 # ================= DELETE (SOFT DELETE) =================

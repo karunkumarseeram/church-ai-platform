@@ -236,7 +236,7 @@ class Feedback(Base, BaseModel):
     rating = Column(Integer,nullable=False,)
     category = Column(Enum(FeedbackCategory),default=FeedbackCategory.GENERAL,nullable=False,)
     status = Column(Enum(FeedbackStatus),default=FeedbackStatus.PENDING,nullable=False,)
-    admin_reply = Column(String)
+    # admin_reply = Column(String)
     replied_at = Column(DateTime(timezone=True))
     is_anonymous = Column(Boolean,default=False,)
     page = Column(String)
@@ -245,3 +245,31 @@ class Feedback(Base, BaseModel):
     location = Column(String)
     ip_address = Column(String)
     user = relationship("User",back_populates="feedbacks",)
+    replies = relationship(
+    "FeedbackReply",
+    back_populates="feedback",
+    cascade="all, delete-orphan",
+    order_by="FeedbackReply.created_at"
+)
+    
+
+class FeedbackReply(Base, BaseModel):
+    __tablename__ = "feedback_replies"
+
+    feedback_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("feedback.id"),
+        nullable=False
+    )
+
+    admin_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=False
+    )
+
+    message = Column(String, nullable=False)
+
+    feedback = relationship("Feedback", back_populates="replies")
+    admin = relationship("User")
+

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { createFeedback } from "../services/feedbackApi";
 
-const FeedbackForm = () => {
+const FeedbackForm = ({ onFeedbackSubmitted }) => {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -30,6 +30,7 @@ const FeedbackForm = () => {
 
     try {
       await createFeedback(form);
+      onFeedbackSubmitted?.();
       setSuccess("Feedback submitted successfully!");
 
       setForm({
