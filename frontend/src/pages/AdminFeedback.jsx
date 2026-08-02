@@ -26,7 +26,7 @@ const AdminFeedback = () => {
 
       console.log("API RESPONSE:", res);
 
-      setFeedbacks(res?.items || []);
+      setFeedbacks(res?.items || res?.data || []);
     } catch (err) {
       console.error(err);
       setFeedbacks([]);
@@ -157,10 +157,14 @@ const AdminFeedback = () => {
             </div>
 
             {/* EXISTING REPLY */}
-            {fb.admin_reply && (
+            {(fb.admin_reply || fb.replies?.length > 0) && (
               <div style={styles.existingReply}>
-                <strong>Admin Reply:</strong>
-                <p>{fb.admin_reply}</p>
+                <strong>Admin Replies:</strong>
+                {(fb.replies || []).map((reply) => (
+                  <p key={reply.id} style={{ marginBottom: 6 }}>
+                    {reply.message}
+                  </p>
+                ))}
               </div>
             )}
           </div>

@@ -60,26 +60,27 @@ export default function Landing() {
             </button>
           ) : (
             <button
-  style={{
-    ...btnBlue,
+            style={{
+              ...btnBlue,
 
-    transform: hoveredBtn
-      ? "translateY(-4px) scale(1.05)"
-      : "translateY(0) scale(1)",
+              transform: hoveredBtn
+                ? "translateY(-4px) scale(1.05)"
+                : "translateY(0) scale(1)",
 
-    boxShadow: hoveredBtn
-      ? "0 18px 35px rgba(253,29,29,0.45), 0 0 18px rgba(252,176,69,0.35)"
-      : "0 10px 22px rgba(131,58,180,0.35), inset 0 1px 1px rgba(255,255,255,0.25)",
+              boxShadow: hoveredBtn
+                ? "0 18px 35px rgba(253,29,29,0.45), 0 0 18px rgba(252,176,69,0.35)"
+                : "0 10px 22px rgba(131,58,180,0.35), inset 0 1px 1px rgba(255,255,255,0.25)",
 
-    filter: hoveredBtn
-      ? "brightness(1.08)"
-      : "brightness(1)",
-  }}
-  onMouseEnter={() => setHoveredBtn(true)}
-  onMouseLeave={() => setHoveredBtn(false)}
->
-  Login
-</button>
+              filter: hoveredBtn
+                ? "brightness(1.08)"
+                : "brightness(1)",
+            }}
+            onMouseEnter={() => setHoveredBtn(true)}
+            onMouseLeave={() => setHoveredBtn(false)}
+            onClick={() => navigate("/login")}
+          >
+            Login
+          </button>
           )}
         </div>
 
@@ -250,9 +251,9 @@ const btnBlue = {
   fontWeight: "800",
 
   fontFamily: "'Cinzel', serif",
-letterSpacing: "1.5px",
-textTransform: "uppercase",
-fontWeight: "900",
+  letterSpacing: "1.5px",
+  textTransform: "uppercase",
+  fontWeight: "900",
 
   backdropFilter: "blur(10px)",
 
