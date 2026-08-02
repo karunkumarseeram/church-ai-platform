@@ -228,68 +228,48 @@ class FeedbackStatus(str, enum.Enum):
 class Feedback(Base, BaseModel):
     __tablename__ = "feedback"
 
-    user_id = Column(
+    user_id = Column(UUID(as_uuid=True),ForeignKey("users.id"),nullable=True,index=True,)
+    name = Column(String, nullable=False)
+    email = Column(String,nullable=False,index=True,)
+    subject = Column(String,nullable=False,)
+    message = Column(String,nullable=False,)
+    rating = Column(Integer,nullable=False,)
+    category = Column(Enum(FeedbackCategory),default=FeedbackCategory.GENERAL,nullable=False,)
+    status = Column(Enum(FeedbackStatus),default=FeedbackStatus.PENDING,nullable=False,)
+    # admin_reply = Column(String)
+    replied_at = Column(DateTime(timezone=True))
+    is_anonymous = Column(Boolean,default=False,)
+    page = Column(String)
+    browser = Column(String)
+    device = Column(String)
+    location = Column(String)
+    ip_address = Column(String)
+    user = relationship("User",back_populates="feedbacks",)
+    replies = relationship(
+    "FeedbackReply",
+    back_populates="feedback",
+    cascade="all, delete-orphan",
+    order_by="FeedbackReply.created_at"
+)
+    
+
+class FeedbackReply(Base, BaseModel):
+    __tablename__ = "feedback_replies"
+
+    feedback_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("feedback.id"),
+        nullable=False
+    )
+
+    admin_id = Column(
         UUID(as_uuid=True),
         ForeignKey("users.id"),
-        nullable=True,
-        index=True,
+        nullable=False
     )
 
-    name = Column(String, nullable=False)
+    message = Column(String, nullable=False)
 
-    email = Column(
-        String,
-        nullable=False,
-        index=True,
-    )
+    feedback = relationship("Feedback", back_populates="replies")
+    admin = relationship("User")
 
-    subject = Column(
-        String,
-        nullable=False,
-    )
-
-    message = Column(
-        String,
-        nullable=False,
-    )
-
-    rating = Column(
-        Integer,
-        nullable=False,
-    )
-
-    category = Column(
-        Enum(FeedbackCategory),
-        default=FeedbackCategory.GENERAL,
-        nullable=False,
-    )
-
-    status = Column(
-        Enum(FeedbackStatus),
-        default=FeedbackStatus.PENDING,
-        nullable=False,
-    )
-
-    admin_reply = Column(String)
-
-    replied_at = Column(DateTime(timezone=True))
-
-    is_anonymous = Column(
-        Boolean,
-        default=False,
-    )
-
-    page = Column(String)
-
-    browser = Column(String)
-
-    device = Column(String)
-
-    location = Column(String)
-
-    ip_address = Column(String)
-
-    user = relationship(
-        "User",
-        back_populates="feedbacks",
-    )

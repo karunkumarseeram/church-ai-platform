@@ -10,7 +10,7 @@ const Feedback = () => {
     try {
       setLoading(true);
       const res = await getMyFeedback();
-      setFeedbacks(res.data || []);
+      setFeedbacks(Array.isArray(res) ? res : res?.data || []);
     } catch (err) {
       console.error("Error fetching feedback:", err);
     } finally {
@@ -27,7 +27,7 @@ const Feedback = () => {
       <h1>User Feedback</h1>
 
       {/* FORM */}
-      <FeedbackForm />
+      <FeedbackForm onFeedbackSubmitted={fetchFeedbacks} />
 
       {/* LIST */}
       <div style={styles.listContainer}>
@@ -48,10 +48,22 @@ const Feedback = () => {
                 <span>Status: {fb.status}</span>
               </div>
 
-              {fb.admin_reply && (
-                <div style={styles.reply}>
-                  <strong>Admin Reply:</strong>
-                  <p>{fb.admin_reply}</p>
+              {(fb.replies?.length > 0 || fb.admin_reply) && (
+                <div style={styles.replySection}>
+                  <strong>Conversation:</strong>
+                  <div style={styles.replyThread}>
+                    <div style={styles.userMessageBox}>
+                      <strong>Your Feedback:</strong>
+                      <p>{fb.message}</p>
+                    </div>
+
+                    {(fb.replies || []).map((reply) => (
+                      <div key={reply.id} style={styles.adminReplyBox}>
+                        <strong>Admin Reply:</strong>
+                        <p>{reply.message}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -82,11 +94,27 @@ const styles = {
     justifyContent: "space-between",
     marginTop: "10px",
   },
-  reply: {
+  replySection: {
     marginTop: "10px",
     padding: "10px",
     background: "#f5f5f5",
     borderRadius: "8px",
+  },
+  replyThread: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+    marginTop: "8px",
+  },
+  userMessageBox: {
+    background: "#e3f2fd",
+    padding: "8px",
+    borderRadius: "6px",
+  },
+  adminReplyBox: {
+    background: "#fff3e0",
+    padding: "8px",
+    borderRadius: "6px",
   },
 };
 
