@@ -16,4 +16,5 @@ def init_db():
         Feedback,
         FeedbackReply,
     )
+    
     Base.metadata.create_all(bind=engine)
