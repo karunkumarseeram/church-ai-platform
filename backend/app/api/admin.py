@@ -120,13 +120,19 @@ def invite_user(
     db.commit()
     db.refresh(new_user)
 
-    background_tasks.add_task(
-        send_invite_email,
-        new_user.email,
-        new_user.name,
-        new_user.role.value,
-        temp_password
-    )
+    try:
+        send_invite_email(
+            new_user.email,
+            new_user.name,
+            new_user.role.value,
+            temp_password
+        )
+    except Exception as exc:
+        # If invite email fails, keep the user but report the failure clearly.
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to send invitation email: {exc}"
+        )
 
     log_admin_action(
         db=db,
