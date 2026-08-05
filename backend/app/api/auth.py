@@ -12,9 +12,8 @@ from app.schemas.auth import (
 from app.core.database import get_db
 from app.models.chr_models import User, OTPS, RoleEnum, PasswordResetToken
 from app.core.security import hash_password, verify_password, create_access_token
-from app.services.email_service import send_email, send_reset_email
+from app.services.email_service import send_email, send_reset_email, send_welcome_email,send_admin_new_signup_email
 from app.services.otp_service import create_otp, verify_otp
-from app.services.email_service import send_welcome_email
 from app.core.security import get_current_user, admin_required
 from app.core.config import settings
 
@@ -23,7 +22,7 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 # -------------------------------
 # 🔹 Signup
 # -------------------------------
-@router.post("/signup", response_model=Token)
+@router.post("/signup")
 def signup(
     user: SignupRequest,
     background_tasks: BackgroundTasks,
@@ -58,15 +57,18 @@ def signup(
         new_user.name
     )
 
-    access_token = create_access_token({
-        "user_id": str(new_user.id),
-        "role": new_user.role.value,
-        "token_version": new_user.token_version
-    })
+    # Notify the admin(s) that a new signup needs approval
+    admin_user = db.query(User).filter(User.role == RoleEnum.ADMIN).first()
+    if admin_user:
+        background_tasks.add_task(
+            send_admin_new_signup_email,
+            admin_user.email,
+            admin_user.name,
+            new_user.email,
+        )
 
     return {
-        "access_token": access_token,
-        "token_type": "bearer"
+        "message": "Signup successful. Your account is awaiting admin approval."
     }
 
 # -------------------------------
