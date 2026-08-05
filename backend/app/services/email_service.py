@@ -52,6 +52,78 @@ def send_welcome_email(to_email, name):
     })
 
 
+# ---------------- INVITE EMAIL ----------------
+def send_invite_email(to_email, name, role, password):
+    template_path = os.path.join(
+        os.path.dirname(__file__),
+        "../templates/invite_email.html"
+    )
+
+    html = render_template(template_path, {
+        "name": name,
+        "email": to_email,
+        "role": role,
+        "password": password,
+        "frontend_url": settings.FRONTEND_URL
+    })
+
+    resend.Emails.send({
+        "from": "FFT Church <onboarding@resend.dev>",
+        "to": [to_email],
+        "subject": "You have been invited to FFT Church",
+        "html": html
+    })
+
+
+# ---------------- ACCOUNT STATUS EMAIL ----------------
+def send_account_status_email(to_email, name, approved: bool):
+    template_path = os.path.join(
+        os.path.dirname(__file__),
+        "../templates/account_status_email.html"
+    )
+
+    status_text = "approved" if approved else "revoked"
+    status_message = (
+        "Your account access has been approved. You can now log in." if approved else
+        "Your account access has been revoked. Please contact an administrator for help."
+    )
+
+    html = render_template(template_path, {
+        "name": name,
+        "status": status_text,
+        "message": status_message,
+        "frontend_url": settings.FRONTEND_URL
+    })
+
+    resend.Emails.send({
+        "from": "FFT Church <onboarding@resend.dev>",
+        "to": [to_email],
+        "subject": f"FFT Church Account {status_text.capitalize()}",
+        "html": html
+    })
+
+
+# ---------------- ADMIN SIGNUP NOTIFICATION EMAIL ----------------
+def send_admin_new_signup_email(to_email, name, new_user_email):
+    template_path = os.path.join(
+        os.path.dirname(__file__),
+        "../templates/admin_new_signup_email.html"
+    )
+
+    html = render_template(template_path, {
+        "name": name,
+        "new_user_email": new_user_email,
+        "frontend_url": settings.FRONTEND_URL
+    })
+
+    resend.Emails.send({
+        "from": "FFT Church <onboarding@resend.dev>",
+        "to": [to_email],
+        "subject": "New Member Signup Pending Approval",
+        "html": html
+    })
+
+
 # ---------------- RESET PASSWORD ----------------
 def send_reset_email(to_email, reset_link):
 
