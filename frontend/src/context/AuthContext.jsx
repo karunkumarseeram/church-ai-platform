@@ -8,13 +8,15 @@ export const AuthProvider = ({ children }) => {
   const storedToken = localStorage.getItem("token");
   const [token, setToken] = useState(storedToken);
   const [userRole, setUserRole] = useState(null);
+  const [userId, setUserId] = useState(null);
 
   // Decode token and set user role on load
   useEffect(() => {
     if (storedToken) {
       try {
-        const decoded = jwtDecode(storedToken); // Extract role
+        const decoded = jwtDecode(storedToken); // Extract role and id
         setUserRole(decoded.role);
+        setUserId(decoded.user_id || decoded.sub || null);
       } catch (err) {
         console.error("Invalid token on load:", err);
         logout(); // Clear invalid token
@@ -26,8 +28,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", newToken); // Save token
     setToken(newToken);
     try {
-      const decoded = jwtDecode(newToken); // Decode role from token
+      const decoded = jwtDecode(newToken); // Decode role and id from token
       setUserRole(decoded.role);
+      setUserId(decoded.user_id || decoded.sub || null);
     } catch (err) {
       console.error("Failed to decode token:", err);
       logout();
@@ -38,10 +41,11 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("token"); // Remove token from storage
     setToken(null);
     setUserRole(null);
+    setUserId(null);
   };
 
   return (
-    <AuthContext.Provider value={{ token, userRole, login, logout }}>
+    <AuthContext.Provider value={{ token, userRole, userId, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

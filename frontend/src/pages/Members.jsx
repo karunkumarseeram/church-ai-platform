@@ -60,6 +60,11 @@ export default function Members() {
     if (userRole === "ADMIN") loadMembers(page);
   }, [userRole, page]);
 
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [inviteData, setInviteData] = useState({ name: "", email: "", phone: "", role: "MEMBER" });
+  const [inviteError, setInviteError] = useState("");
+  const [inviteSuccess, setInviteSuccess] = useState("");
+
   const handleApprove = async (id) => {
     try {
       await API.put(`/admin/members/${id}/approve`, {}, {
@@ -79,6 +84,26 @@ export default function Members() {
       loadMembers(page);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleInviteSubmit = async () => {
+    if (!inviteData.name || !inviteData.email) {
+      setInviteError("Name and email are required");
+      return;
+    }
+
+    try {
+      const res = await API.post("/admin/members/invite", inviteData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setInviteSuccess(res.data.message || "Invitation sent");
+      setInviteError("");
+      setInviteModalOpen(false);
+      setInviteData({ name: "", email: "", phone: "", role: "MEMBER" });
+      loadMembers(page);
+    } catch (err) {
+      setInviteError(err.response?.data?.detail || "Failed to send invitation");
     }
   };
 
@@ -134,11 +159,20 @@ export default function Members() {
     <Box sx={{ p: 3, backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
       <Card sx={{ mb: 3, boxShadow: 3 }}>
         <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <PersonIcon sx={{ mr: 2, color: 'primary.main', fontSize: 30 }} />
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-              Church Members Management
-            </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <PersonIcon sx={{ color: 'primary.main', fontSize: 30 }} />
+              <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                Church Members Management
+              </Typography>
+            </Box>
+            <Button
+              variant="contained"
+              sx={{ background: '#6A1B9A', '&:hover': { background: '#4B0F72' } }}
+              onClick={() => setInviteModalOpen(true)}
+            >
+              Invite Pastor / Member
+            </Button>
           </Box>
           <Typography variant="body1" color="text.secondary">
             Manage church members, approve new registrations, and oversee member status.
@@ -283,6 +317,104 @@ export default function Members() {
           )}
         </CardContent>
       </Card>
+
+      {inviteModalOpen && (
+        <Box sx={inviteStyles.overlay}>
+          <Box sx={inviteStyles.modal}>
+            <Typography variant="h5" sx={{ mb: 2 }}>
+              Invite a Member or Pastor
+            </Typography>
+            {inviteError && (
+              <Typography color="error" sx={{ mb: 2 }}>
+                {inviteError}
+              </Typography>
+            )}
+            {inviteSuccess && (
+              <Typography color="success.main" sx={{ mb: 2 }}>
+                {inviteSuccess}
+              </Typography>
+            )}
+            <Box sx={{ display: 'grid', gap: 2 }}>
+              <input
+                value={inviteData.name}
+                onChange={(e) => setInviteData({ ...inviteData, name: e.target.value })}
+                placeholder="Name"
+                style={inviteStyles.input}
+              />
+              <input
+                value={inviteData.email}
+                onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
+                placeholder="Email"
+                style={inviteStyles.input}
+              />
+              <input
+                value={inviteData.phone}
+                onChange={(e) => setInviteData({ ...inviteData, phone: e.target.value })}
+                placeholder="Phone"
+                style={inviteStyles.input}
+              />
+              <select
+                value={inviteData.role}
+                onChange={(e) => setInviteData({ ...inviteData, role: e.target.value })}
+                style={inviteStyles.select}
+              >
+                <option value="MEMBER">Member</option>
+                <option value="PASTOR">Pastor</option>
+              </select>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mt: 3 }}>
+              <Button
+                variant="outlined"
+                sx={{ color: '#6A1B9A', borderColor: '#6A1B9A' }}
+                onClick={() => setInviteModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                sx={{ background: '#6A1B9A', '&:hover': { background: '#4B0F72' } }}
+                onClick={handleInviteSubmit}
+              >
+                Send Invite
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 }
+
+const inviteStyles = {
+  overlay: {
+    position: 'fixed',
+    inset: 0,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1500,
+  },
+  modal: {
+    width: 420,
+    bgcolor: '#fff',
+    borderRadius: 3,
+    p: 4,
+    boxShadow: '0 18px 45px rgba(0,0,0,0.2)',
+  },
+  input: {
+    width: '100%',
+    padding: '12px 14px',
+    borderRadius: 8,
+    border: '1px solid #ddd',
+    fontSize: 15,
+  },
+  select: {
+    width: '100%',
+    padding: '12px 14px',
+    borderRadius: 8,
+    border: '1px solid #ddd',
+    fontSize: 15,
+    background: '#fff',
+  },
+};
