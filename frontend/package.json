@@ -26,11 +26,11 @@
     "react-hot-toast": "^2.6.0",
     "react-icons": "^5.6.0",
     "react-qr-code": "^2.0.21",
-    "react-router-dom": "^7.13.2",
+    "react-router-dom": "^7.11.0",
     "recharts": "^3.8.1"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.43.0",
+    "@cloudflare/vite-plugin": "^1.12.4",
     "@eslint/js": "^9.39.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -40,6 +40,6 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
     "vite": "^8.0.1",
-    "wrangler": "^4.107.0"
+    "wrangler": "^4.35.0"
   }
 }
