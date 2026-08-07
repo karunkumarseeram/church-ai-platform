@@ -20,7 +20,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [loadingBible, setLoadingBible] = useState(true);
   const [bibleVerse, setBibleVerse] = useState(null);
-  const [dailyVerses, setDailyVerses] = useState([]);
 
   const [showEventModal, setShowEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
@@ -164,7 +163,6 @@ export default function Dashboard() {
     try {
       const res = await API.get("/bible/daily");
       setBibleVerse(res.data.verse_of_the_day);
-      setDailyVerses(res.data.verses || []);
     } catch (err) {
       console.log(err);
     } finally {
@@ -281,20 +279,15 @@ export default function Dashboard() {
           <p style={styles.loadingBible}>Loading Bible devotion...</p>
         ) : (
           <div style={styles.bibleGrid}>
-            {bibleVerse && (
+            {bibleVerse ? (
               <div style={styles.dailyVerseCard}>
                 <span style={styles.cardLabel}>Verse of the Day</span>
                 <p style={styles.dailyVerseText}>{bibleVerse.text}</p>
                 <p style={styles.dailyVerseRef}>{bibleVerse.reference}</p>
               </div>
+            ) : (
+              <p style={styles.loadingBible}>No Verse of the Day available.</p>
             )}
-
-            {dailyVerses.slice(0, 3).map((verse) => (
-              <div key={verse.reference} style={styles.smallVerseCard}>
-                <p style={styles.smallVerseText}>{verse.text}</p>
-                <p style={styles.smallVerseRef}>{verse.reference}</p>
-              </div>
-            ))}
           </div>
         )}
       </div>
@@ -612,7 +605,7 @@ const styles = {
 
   bibleGrid: {
     display: "grid",
-    gridTemplateColumns: "1.5fr 1fr 1fr",
+    gridTemplateColumns: "1fr",
     gap: 18,
   },
 
@@ -620,9 +613,9 @@ const styles = {
     background: "linear-gradient(135deg, #8C46FF, #4A64E8)",
     color: "#fff",
     borderRadius: 20,
-    padding: 24,
-    minHeight: 220,
-    boxShadow: "0 16px 35px rgba(74, 71, 128, 0.16)",
+    padding: 18,
+    minHeight: 160,
+    boxShadow: "0 12px 28px rgba(74, 71, 128, 0.16)",
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",

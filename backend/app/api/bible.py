@@ -6,7 +6,7 @@ from uuid import UUID
 from app.core.security import get_current_user, admin_required
 from app.core.database import get_db
 from app.models.chr_models import BibleVerse, AdminActionLog
-from app.bible_data import DAILY_VERSES, get_books, get_chapters, get_daily_verse
+from app.bible_data import get_books, get_chapters, get_daily_verse, get_passage
 
 router = APIRouter(prefix="/bible", tags=["Bible"])
 
@@ -43,12 +43,29 @@ class BibleVerseUpdate(BaseModel):
     is_daily: Optional[bool] = None
 
 @router.get("/daily")
-def daily_bible(user=Depends(get_current_user)):
+def daily_bible(
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    # Prefer admin-created Bible verses first.
+    custom_daily = (
+        db.query(BibleVerse)
+        .filter(BibleVerse.is_deleted == False)
+        .order_by(BibleVerse.created_at.desc())
+        .first()
+    )
+
+    if custom_daily:
+        return {
+            "verse_of_the_day": {
+                "reference": f"{custom_daily.book} {custom_daily.chapter}:{custom_daily.verse_number}",
+                "text": custom_daily.text_en,
+                "source": "admin",
+            }
+        }
+
     verse_of_the_day = get_daily_verse()
-    return {
-        "verse_of_the_day": verse_of_the_day,
-        "verses": DAILY_VERSES,
-    }
+    return {"verse_of_the_day": verse_of_the_day}
 
 @router.get("/books")
 def bible_books(user=Depends(get_current_user)):
@@ -99,28 +116,17 @@ def get_bible_verses_from_db(
 def bible_passage(
     book: str = Query(..., description="Bible book name"),
     chapter: int = Query(..., description="Bible chapter number"),
-    db: Session = Depends(get_db),
     user=Depends(get_current_user)
 ):
-    """Get Bible passage from database"""
-    verses = db.query(BibleVerse).filter(
-        BibleVerse.book == book,
-        BibleVerse.chapter == chapter,
-        BibleVerse.is_deleted == False
-    ).order_by(BibleVerse.verse_number).all()
-
+    """Get Bible passage from the online WordProject Telugu Bible"""
+    verses = get_passage(book, chapter)
     if not verses:
         raise HTTPException(status_code=404, detail=f"Chapter {chapter} not found in book {book}")
 
     return {
         "book": book,
         "chapter": chapter,
-        "verses": [
-            {
-                "number": v.verse_number,
-                "text": v.text_en
-            } for v in verses
-        ]
+        "verses": verses
     }
 
 

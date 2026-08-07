@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import API from "../services/api";
 
 export default function Bible() {
-  const [dailyVerses, setDailyVerses] = useState([]);
   const [verseOfTheDay, setVerseOfTheDay] = useState(null);
   const [books, setBooks] = useState([]);
   const [chapters, setChapters] = useState([]);
@@ -39,11 +38,10 @@ export default function Bible() {
   const loadDailyVerses = async () => {
     try {
       const res = await API.get("/bible/daily");
-      setDailyVerses(res.data.verses || []);
       setVerseOfTheDay(res.data.verse_of_the_day || null);
     } catch (err) {
       console.error(err);
-      setError("Failed to load daily verses.");
+      setError("Failed to load the Verse of the Day.");
     }
   };
 
@@ -139,20 +137,15 @@ export default function Bible() {
             </div>
           </div>
 
-          {verseOfTheDay && (
-            <div style={styles.featureCard}>
-              <p style={styles.featureText}>{verseOfTheDay.text}</p>
-              <p style={styles.featureRef}>{verseOfTheDay.reference}</p>
-            </div>
-          )}
-
-          <div style={styles.verseGrid}>
-            {dailyVerses.map((verse) => (
-              <div key={verse.reference} style={styles.verseCard}>
-                <p style={styles.verseText}>{verse.text}</p>
-                <p style={styles.verseRef}>{verse.reference}</p>
+          <div style={styles.singleVerseCardWrapper}>
+            {verseOfTheDay ? (
+              <div style={styles.verseCardCompact}>
+                <p style={styles.featureText}>{verseOfTheDay.text}</p>
+                <p style={styles.featureRef}>{verseOfTheDay.reference}</p>
               </div>
-            ))}
+            ) : (
+              <p style={styles.empty}>Loading Verse of the Day...</p>
+            )}
           </div>
         </section>
 
@@ -246,8 +239,9 @@ const styles = {
   },
   grid: {
     display: "grid",
-    gridTemplateColumns: "1.2fr 0.8fr",
+    gridTemplateColumns: "0.9fr 1.1fr",
     gap: 24,
+    alignItems: "start",
   },
   cardSection: {
     background: "#fff",
@@ -291,6 +285,22 @@ const styles = {
     marginTop: 14,
     color: "#4338ca",
     fontWeight: 700,
+  },
+  singleVerseCardWrapper: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "flex-start",
+  },
+  verseCardCompact: {
+    background: "#f8fafc",
+    borderRadius: 18,
+    padding: 18,
+    maxWidth: 640,
+    width: "auto",
+    boxShadow: "0 10px 20px rgba(15, 23, 42, 0.05)",
+    display: "inline-flex",
+    flexDirection: "column",
+    gap: 8,
   },
   verseGrid: {
     display: "grid",
