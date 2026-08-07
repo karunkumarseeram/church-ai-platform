@@ -41,6 +41,9 @@ import api from '../services/api';
 const BibleVerseManager = () => {
   const [verses, setVerses] = useState([]);
   const [books, setBooks] = useState([]);
+  const [chapters, setChapters] = useState([]);
+  const [verseOptions, setVerseOptions] = useState([]);
+  const [versePreview, setVersePreview] = useState('');
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingVerse, setEditingVerse] = useState(null);
@@ -75,6 +78,51 @@ const BibleVerseManager = () => {
     }
   };
 
+  const loadBookChapters = async (book) => {
+    if (!book) {
+      setChapters([]);
+      setVerseOptions([]);
+      setVersePreview('');
+      return;
+    }
+
+    try {
+      const response = await api.get('/bible/chapters', { params: { book } });
+      setChapters(response.data.chapters || []);
+    } catch (error) {
+      console.error('Error loading chapters:', error);
+      setChapters([]);
+    }
+  };
+
+  const loadPassageVerseOptions = async (book, chapter) => {
+    if (!book || !chapter) {
+      setVerseOptions([]);
+      setVersePreview('');
+      return;
+    }
+
+    try {
+      const response = await api.get('/bible/passage', {
+        params: { book, chapter: Number(chapter) }
+      });
+      const verses = response.data.verses || [];
+      setVerseOptions(verses);
+
+      if (formData.verse_number) {
+        const selected = verses.find((verse) => verse.number === Number(formData.verse_number));
+        if (selected) {
+          setVersePreview(selected.text);
+          setFormData((prev) => ({ ...prev, text_en: selected.text }));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading passage for verse options:', error);
+      setVerseOptions([]);
+      setVersePreview('');
+    }
+  };
+
   const loadVerses = async () => {
     try {
       setLoading(true);
@@ -102,12 +150,14 @@ const BibleVerseManager = () => {
       setEditingVerse(verse);
       setFormData({
         book: verse.book,
-        chapter: verse.chapter,
-        verse_number: verse.verse_number,
+        chapter: String(verse.chapter),
+        verse_number: String(verse.verse_number),
         text_en: verse.text_en,
         text_te: verse.text_te || '',
         is_daily: verse.is_daily
       });
+      loadBookChapters(verse.book);
+      loadPassageVerseOptions(verse.book, verse.chapter);
     } else {
       setEditingVerse(null);
       setFormData({
@@ -118,6 +168,9 @@ const BibleVerseManager = () => {
         text_te: '',
         is_daily: false
       });
+      setChapters([]);
+      setVerseOptions([]);
+      setVersePreview('');
     }
     setOpenDialog(true);
   };
@@ -133,6 +186,9 @@ const BibleVerseManager = () => {
       text_te: '',
       is_daily: false
     });
+    setChapters([]);
+    setVerseOptions([]);
+    setVersePreview('');
   };
 
   const handleSubmit = async () => {
@@ -347,9 +403,15 @@ const BibleVerseManager = () => {
                 <InputLabel>Book</InputLabel>
                 <Select
                   value={formData.book}
-                  onChange={(e) => setFormData({ ...formData, book: e.target.value })}
+                  onChange={async (e) => {
+                    const book = e.target.value;
+                    setFormData({ ...formData, book, chapter: '', verse_number: '', text_en: '' });
+                    setVersePreview('');
+                    await loadBookChapters(book);
+                  }}
                   label="Book"
                 >
+                  <MenuItem value="">Select book</MenuItem>
                   {books.map((book) => (
                     <MenuItem key={book} value={book}>{book}</MenuItem>
                   ))}
@@ -357,22 +419,67 @@ const BibleVerseManager = () => {
               </FormControl>
             </Grid>
             <Grid item xs={6} md={3}>
-              <TextField
-                fullWidth
-                label="Chapter"
-                type="number"
-                value={formData.chapter}
-                onChange={(e) => setFormData({ ...formData, chapter: e.target.value })}
-              />
+              {chapters.length > 0 ? (
+                <FormControl fullWidth>
+                  <InputLabel>Chapter</InputLabel>
+                  <Select
+                    value={formData.chapter}
+                    onChange={async (e) => {
+                      const chapter = e.target.value;
+                      setFormData({ ...formData, chapter, verse_number: '', text_en: '' });
+                      setVersePreview('');
+                      await loadPassageVerseOptions(formData.book, chapter);
+                    }}
+                    label="Chapter"
+                  >
+                    <MenuItem value="">Select chapter</MenuItem>
+                    {chapters.map((chapter) => (
+                      <MenuItem key={chapter} value={String(chapter)}>{chapter}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              ) : (
+                <TextField
+                  fullWidth
+                  label="Chapter"
+                  type="number"
+                  value={formData.chapter}
+                  onChange={(e) => setFormData({ ...formData, chapter: e.target.value })}
+                />
+              )}
             </Grid>
             <Grid item xs={6} md={3}>
-              <TextField
-                fullWidth
-                label="Verse Number"
-                type="number"
-                value={formData.verse_number}
-                onChange={(e) => setFormData({ ...formData, verse_number: e.target.value })}
-              />
+              {verseOptions.length > 0 ? (
+                <FormControl fullWidth>
+                  <InputLabel>Verse Number</InputLabel>
+                  <Select
+                    value={formData.verse_number}
+                    onChange={(e) => {
+                      const verseNumber = e.target.value;
+                      setFormData({ ...formData, verse_number: verseNumber });
+                      const selectedVerse = verseOptions.find((verse) => verse.number === Number(verseNumber));
+                      if (selectedVerse) {
+                        setVersePreview(selectedVerse.text);
+                        setFormData((prev) => ({ ...prev, text_en: selectedVerse.text }));
+                      }
+                    }}
+                    label="Verse Number"
+                  >
+                    <MenuItem value="">Select verse</MenuItem>
+                    {verseOptions.map((verse) => (
+                      <MenuItem key={verse.number} value={String(verse.number)}>{verse.number}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              ) : (
+                <TextField
+                  fullWidth
+                  label="Verse Number"
+                  type="number"
+                  value={formData.verse_number}
+                  onChange={(e) => setFormData({ ...formData, verse_number: e.target.value })}
+                />
+              )}
             </Grid>
             <Grid item xs={12}>
               <TextField
@@ -385,6 +492,18 @@ const BibleVerseManager = () => {
                 required
               />
             </Grid>
+            {versePreview && (
+              <Grid item xs={12}>
+                <Card variant="outlined" sx={{ backgroundColor: '#f9fafb' }}>
+                  <CardContent>
+                    <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                      Preview from Online Bible
+                    </Typography>
+                    <Typography variant="body2">{versePreview}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            )}
             <Grid item xs={12}>
               <TextField
                 fullWidth
